@@ -1,11 +1,32 @@
 :root {
-  --bg: #0B1220;
-  --surface: #111827;
-  --text: #F9FAFB;
-  --muted: #9CA3AF;
-  --border: rgba(255,255,255,0.08);
+  /* Core palette */
+  --primary: #1e8a5b;
+  --primary-600: #177148;
+  --secondary: #F59E0B;
+  --error: #DC2626;
+
+  /* Surfaces & text */
+  --bg: #F3F4F6;
+  --surface: #FFFFFF;
+  --text: #111827;
+  --muted: #6B7280;
+
+  /* Borders & shadows */
+  --border: #E5E7EB;
+  --shadow: 0 1px 2px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.1);
+
+  /* Components */
+  --card-bg: var(--surface);
+  --card-border: var(--border);
+  --card-hover: rgba(30,138,91,0.08);
+  --table-header-bg: #F9FAFB;
+  --table-row-hover: #F3F4F6;
+
+  /* Gradient */
+  --gradient: linear-gradient(135deg, #1e8a5b 0%, #34d399 100%);
 }
 
+/* Reset and base */
 * { box-sizing: border-box; }
 
 html, body, #root {
@@ -21,8 +42,24 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-a { color: inherit; }
+/* Links use primary color and accessible focus rings */
+a {
+  color: var(--primary);
+  text-decoration: none;
+}
+a:hover {
+  text-decoration: underline;
+}
+a:focus-visible, button:focus-visible, select:focus-visible, input:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 3px rgba(30,138,91,0.25);
+}
 
-code {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+/* Tables hover and header styles (if used) */
+thead th {
+  background: var(--table-header-bg);
+}
+tbody tr:hover {
+  background: var(--table-row-hover);
 }

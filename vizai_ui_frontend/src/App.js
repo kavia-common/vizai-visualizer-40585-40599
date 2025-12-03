@@ -4,21 +4,22 @@ import './index.css';
 import './App.css';
 
 /**
- * Neon Fun Theme tokens (Playful)
- * Electric brights & dark base
+ * PUBLIC_INTERFACE
+ * Tokens are driven by CSS variables. This map reads from getComputedStyle for inline styles.
  */
+const cssVar = (name) => getComputedStyle(document.documentElement).getPropertyValue(name) || '';
 const themeTokens = {
-  primary: '#10B981',
-  secondary: '#F59E0B',
-  success: '#10B981',
-  error: '#EF4444',
-  background: '#0B1220',
-  surface: '#111827',
-  text: '#F9FAFB',
-  gradient: 'linear-gradient(90deg, #34D399 0%, #FBBF24 50%, #F87171 100%)',
-  subtle: '#374151',
-  border: 'rgba(255,255,255,0.08)',
-  glow: '0 0 16px rgba(16,185,129,0.35)',
+  get primary() { return cssVar('--primary').trim() || '#1e8a5b'; },
+  get primary600() { return cssVar('--primary-600').trim() || '#177148'; },
+  get secondary() { return cssVar('--secondary').trim() || '#F59E0B'; },
+  get error() { return cssVar('--error').trim() || '#DC2626'; },
+  get background() { return cssVar('--bg').trim() || '#F3F4F6'; },
+  get surface() { return cssVar('--surface').trim() || '#FFFFFF'; },
+  get text() { return cssVar('--text').trim() || '#111827'; },
+  get gradient() { return cssVar('--gradient').trim() || 'linear-gradient(135deg,#1e8a5b 0%,#34d399 100%)'; },
+  get subtle() { return cssVar('--table-header-bg').trim() || '#F9FAFB'; },
+  get border() { return cssVar('--border').trim() || '#E5E7EB'; },
+  get shadow() { return cssVar('--shadow').trim() || '0 1px 2px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.1)'; },
 };
 
 /**
@@ -48,33 +49,25 @@ export const useAuth = () => useContext(AuthContext);
  * StatusBadge component: Active, Resting, Feeding
  */
 function StatusBadge({ status }) {
-  /** This badge uses playful neon styling with rounded pill and glow. */
+  /** Badge uses primary/secondary palette via CSS variables */
   const map = {
-    Active: { bg: 'rgba(16,185,129,0.15)', color: themeTokens.primary },
-    Resting: { bg: 'rgba(55,65,81,0.35)', color: '#9CA3AF' },
-    Feeding: { bg: 'rgba(245,158,11,0.2)', color: themeTokens.secondary },
+    Active: { bg: 'rgba(30,138,91,0.12)', color: themeTokens.primary },
+    Resting: { bg: 'rgba(107,114,128,0.18)', color: 'var(--muted)' },
+    Feeding: { bg: 'rgba(245,158,11,0.18)', color: themeTokens.secondary },
   };
   const cfg = map[status] || map.Active;
   return (
     <span
+      className="badge"
       style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: 8,
-        padding: '6px 10px',
-        borderRadius: 999,
         background: cfg.bg,
         color: cfg.color,
-        fontWeight: 700,
-        fontSize: 12,
-        letterSpacing: 0.3,
-        boxShadow: status === 'Active' ? themeTokens.glow : 'none',
       }}
       aria-label={`status ${status}`}
       title={`Behavior status: ${status}`}
     >
       <span style={{
-        width: 8, height: 8, borderRadius: 999, background: cfg.color, boxShadow: status === 'Active' ? themeTokens.glow : 'none'
+        width: 8, height: 8, borderRadius: 999, background: cfg.color
       }} />
       {status}
     </span>
@@ -90,7 +83,7 @@ function ConnectionBanner({ visible, message = 'Connection lost. Reconnecting…
   return (
     <div role="status" style={{
       width: '100%',
-      background: 'rgba(239,68,68,0.15)',
+      background: 'rgba(220,38,38,0.12)',
       color: themeTokens.error,
       padding: '8px 16px',
       textAlign: 'center',
@@ -110,7 +103,7 @@ function DateRangeSelector({ value, onChange }) {
   const options = ['Today', 'Last 7 Days', 'Last 30 Days', 'Custom…'];
   return (
     <div style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>
-      <span style={{ color: '#9CA3AF', fontSize: 12 }}>Date Range</span>
+      <span style={{ color: 'var(--muted)', fontSize: 12 }}>Date Range</span>
       <select
         aria-label="Date Range"
         value={value}
@@ -122,6 +115,7 @@ function DateRangeSelector({ value, onChange }) {
           borderRadius: 12,
           padding: '8px 12px',
           fontWeight: 600,
+          boxShadow: themeTokens.shadow,
         }}
       >
         {options.map(opt => (
@@ -140,7 +134,7 @@ function Logo() {
     <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontWeight: 900 }}>
       <span style={{
         width: 28, height: 28, borderRadius: 8,
-        background: themeTokens.gradient, boxShadow: themeTokens.glow
+        background: themeTokens.gradient, boxShadow: themeTokens.shadow
       }} />
       <span style={{
         backgroundImage: themeTokens.gradient,
@@ -167,11 +161,11 @@ function NavBar({ dateRange, setDateRange, showChatTab, species, setSpecies }) {
     padding: '10px 14px',
     borderRadius: 12,
     fontWeight: 700,
-    color: active ? themeTokens.text : '#9CA3AF',
-    background: active ? 'rgba(52,211,153,0.1)' : 'transparent',
+    color: active ? themeTokens.text : 'var(--muted)',
+    background: active ? 'rgba(30,138,91,0.10)' : 'transparent',
     textDecoration: 'none',
-    border: `1px solid ${active ? 'rgba(52,211,153,0.35)' : 'transparent'}`,
-    boxShadow: active ? themeTokens.glow : 'none'
+    border: `1px solid ${active ? 'rgba(30,138,91,0.35)' : 'transparent'}`,
+    boxShadow: active ? themeTokens.shadow : 'none'
   });
 
   // Alert badge (mock) for Alerts tab
@@ -179,34 +173,34 @@ function NavBar({ dateRange, setDateRange, showChatTab, species, setSpecies }) {
     <span aria-label="notifications" style={{
       position: 'absolute', top: -4, right: -4,
       width: 18, height: 18, borderRadius: 999,
-      background: themeTokens.secondary, color: '#0B1220',
+      background: themeTokens.secondary, color: 'var(--surface)',
       fontSize: 11, fontWeight: 900,
       display: 'grid', placeItems: 'center',
-      boxShadow: themeTokens.glow
+      boxShadow: themeTokens.shadow
     }}>1</span>
   );
 
   return (
-    <div style={{
+    <div className="nav" style={{
       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-      padding: 16, borderBottom: `1px solid ${themeTokens.border}`, background: themeTokens.surface, position: 'sticky', top: 0, zIndex: 10
+      padding: 16, position: 'sticky', top: 0, zIndex: 10
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
         <Logo />
         <div style={{ height: 24, width: 1, background: themeTokens.border }} />
-        <label style={{ color: '#9CA3AF', fontSize: 12 }} title="Choose species to filter views">Species</label>
+        <label style={{ color: 'var(--muted)', fontSize: 12 }} title="Choose species to filter views">Species</label>
         <select
           aria-label="Species"
           value={species}
           onChange={(e) => setSpecies(e.target.value)}
           style={{
-            background: '#0F172A',
+            background: 'var(--surface)',
             color: themeTokens.text,
             border: `1px solid ${themeTokens.border}`,
             borderRadius: 12,
             padding: '8px 12px',
             fontWeight: 700,
-            boxShadow: themeTokens.glow
+            boxShadow: themeTokens.shadow
           }}
         >
           <option value="Giant Anteater">Giant Anteater</option>
@@ -246,12 +240,12 @@ function NavBar({ dateRange, setDateRange, showChatTab, species, setSpecies }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <StatusBadge status="Active" />
           <div title="Keyboard: ? for tips" style={{
-            padding: '6px 10px', borderRadius: 999, border: `1px dashed ${themeTokens.border}`, color: '#9CA3AF', fontSize: 12
+            padding: '6px 10px', borderRadius: 999, border: `1px dashed ${themeTokens.border}`, color: 'var(--muted)', fontSize: 12
           }}>Tips: Press ?</div>
         </div>
         <div style={{
           display: 'inline-flex', alignItems: 'center', gap: 8, padding: '8px 10px',
-          border: `1px solid ${themeTokens.border}`, borderRadius: 12, background: '#0F172A'
+          border: `1px solid ${themeTokens.border}`, borderRadius: 12, background: 'var(--surface)', boxShadow: themeTokens.shadow
         }}>
           <div style={{ width: 8, height: 8, borderRadius: 999, background: '#22C55E' }} />
           <span style={{ fontWeight: 700 }}>researcher@viz.ai</span>
@@ -271,7 +265,7 @@ function EmptyState({ title = 'No data to display', description = 'Try adjusting
       padding: 24,
       borderRadius: 16,
       textAlign: 'center',
-      color: '#9CA3AF'
+      color: 'var(--muted)'
     }}>
       <div style={{ fontWeight: 800, marginBottom: 6 }}>{title}</div>
       <div style={{ fontSize: 14 }}>{description}</div>
@@ -281,14 +275,7 @@ function EmptyState({ title = 'No data to display', description = 'Try adjusting
 
 function ErrorState({ message = 'Something went wrong. Please try again.' }) {
   return (
-    <div role="alert" style={{
-      border: `1px solid rgba(239,68,68,0.35)`,
-      padding: 16,
-      borderRadius: 12,
-      background: 'rgba(239,68,68,0.08)',
-      color: themeTokens.error,
-      fontWeight: 700
-    }}>
+    <div role="alert" className="alert-error">
       {message}
     </div>
   );
@@ -334,14 +321,14 @@ function VideoModal({ open, onClose }) {
 
   return (
     <div role="dialog" aria-modal="true" style={{
-      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)',
+      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.35)',
       display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, zIndex: 50
     }}>
       <div style={{
         background: themeTokens.surface, border: `1px solid ${themeTokens.border}`,
-        borderRadius: 16, width: 'min(100%, 980px)', overflow: 'hidden', color: themeTokens.text
+        borderRadius: 16, width: 'min(100%, 980px)', overflow: 'hidden', color: themeTokens.text, boxShadow: themeTokens.shadow
       }}>
-        <div style={{ padding: 16, borderBottom: `1px solid ${themeTokens.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ padding: 16, borderBottom: `1px solid ${themeTokens.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--table-header-bg)' }}>
           <div style={{ fontWeight: 800 }}>Video Preview</div>
           <div style={{ display: 'flex', gap: 8 }}>
             <button style={primaryGhostBtnStyle} onClick={() => setShowAI(v => !v)} title="Toggle AI annotations">
@@ -354,8 +341,8 @@ function VideoModal({ open, onClose }) {
           <div
             ref={playerRef}
             style={{
-              background: '#0B1220', border: `1px solid ${themeTokens.border}`, borderRadius: 12,
-              height: 360, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9CA3AF', position: 'relative'
+              background: 'var(--bg)', border: `1px solid ${themeTokens.border}`, borderRadius: 12,
+              height: 360, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--muted)', position: 'relative'
             }}
           >
             {error ? (
@@ -365,7 +352,7 @@ function VideoModal({ open, onClose }) {
                 <div>[ Placeholder Player {playing ? 'Playing' : 'Paused'} @ {speed}x ]</div>
                 {showAI && (
                   <div style={{
-                    position: 'absolute', bottom: 12, left: 12, background: 'rgba(16,185,129,0.2)', border: `1px solid ${themeTokens.border}`,
+                    position: 'absolute', bottom: 12, left: 12, background: 'rgba(30,138,91,0.15)', border: `1px solid ${themeTokens.border}`,
                     color: themeTokens.text, padding: '6px 8px', borderRadius: 8, fontSize: 12
                   }}>
                     AI: Feeding (0.92)
@@ -410,12 +397,13 @@ function VideoModal({ open, onClose }) {
  */
 const primaryBtnStyle = {
   background: themeTokens.gradient,
-  color: '#0B1220',
+  color: 'var(--surface)',
   fontWeight: 800,
   border: 'none',
   borderRadius: 12,
   padding: '10px 14px',
   cursor: 'pointer',
+  boxShadow: themeTokens.shadow,
 };
 const primaryGhostBtnStyle = {
   background: 'transparent',
@@ -427,13 +415,14 @@ const primaryGhostBtnStyle = {
   cursor: 'pointer',
 };
 const controlBtnStyle = {
-  background: '#0F172A',
+  background: 'var(--surface)',
   color: themeTokens.text,
   fontWeight: 800,
   border: `1px solid ${themeTokens.border}`,
   borderRadius: 12,
   padding: '8px 10px',
   cursor: 'pointer',
+  boxShadow: themeTokens.shadow,
 };
 
 /**
@@ -463,13 +452,13 @@ function LoginPage() {
   return (
     <div style={{ minHeight: '100vh', background: themeTokens.background, color: themeTokens.text, display: 'grid', placeItems: 'center', padding: 24 }}>
       <form onSubmit={onSubmit} style={{
-        width: 'min(100%, 440px)', background: themeTokens.surface, border: `1px solid ${themeTokens.border}`, borderRadius: 16, padding: 24
+        width: 'min(100%, 440px)', background: themeTokens.surface, border: `1px solid ${themeTokens.border}`, borderRadius: 16, padding: 24, boxShadow: themeTokens.shadow
       }}>
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
           <Logo />
         </div>
         <div className="title" style={{ textAlign: 'center', fontWeight: 900, marginBottom: 6 }}>Welcome to VizAI</div>
-        <div className="subtitle" style={{ textAlign: 'center', color: '#9CA3AF', marginBottom: 20 }}>
+        <div className="subtitle" style={{ textAlign: 'center', color: 'var(--muted)', marginBottom: 20 }}>
           Sign in with your research account to continue.
         </div>
         <label style={{ fontWeight: 700, fontSize: 12, color: '#9CA3AF' }}>Email</label>
@@ -488,12 +477,13 @@ function LoginPage() {
 
 const inputStyle = {
   width: '100%',
-  background: '#0B1220',
+  background: 'var(--surface)',
   border: `1px solid ${themeTokens.border}`,
   color: themeTokens.text,
   padding: '10px 12px',
   borderRadius: 12,
   margin: '8px 0 14px',
+  boxShadow: themeTokens.shadow,
 };
 
 // PUBLIC_INTERFACE
@@ -517,16 +507,15 @@ function AnimalSelectPage() {
 
 function Card({ title, description, active, disabled }) {
   return (
-    <div style={{
-      border: `1px solid ${themeTokens.border}`,
+    <div className="card" style={{
       borderRadius: 16,
       padding: 16,
-      background: disabled ? '#0B1220' : themeTokens.surface,
+      background: disabled ? 'var(--table-row-hover)' : 'var(--card-bg)',
       opacity: disabled ? 0.6 : 1,
-      boxShadow: active ? themeTokens.glow : 'none'
+      boxShadow: active ? themeTokens.shadow : 'var(--shadow)'
     }}>
       <div style={{ fontWeight: 800, marginBottom: 6 }}>{title}</div>
-      <div style={{ color: '#9CA3AF', marginBottom: 12 }}>{description}</div>
+      <div className="muted" style={{ marginBottom: 12 }}>{description}</div>
       <div style={{ display: 'flex', gap: 8 }}>
         <Link to={active ? '/dashboard' : '#'} style={{
           ...primaryBtnStyle,
@@ -564,12 +553,12 @@ function DashboardPage() {
               <div style={{ display: 'grid', gap: 8 }}>
                 {behaviors.map(b => (
                   <div key={b} style={{ display: 'grid', gap: 6 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#9CA3AF' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--muted)' }}>
                       <span>{b}</span>
                       <span>{mockCounts[b]}</span>
                     </div>
                     <div style={{
-                      height: 10, background: '#0B1220', border: `1px solid ${themeTokens.border}`, borderRadius: 999, overflow: 'hidden'
+                      height: 10, background: 'var(--table-row-hover)', border: `1px solid ${themeTokens.border}`, borderRadius: 999, overflow: 'hidden'
                     }}>
                       <div style={{
                         width: `${(mockCounts[b] / Math.max(1, totalCount)) * 100}%`,
@@ -583,10 +572,10 @@ function DashboardPage() {
           </ChartBlock>
           <ChartBlock title="Behavior Duration">
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, gap: 8 }}>
-              <div style={{ color: '#9CA3AF', fontSize: 12 }}>View</div>
+              <div style={{ color: 'var(--muted)', fontSize: 12 }}>View</div>
               <div style={{ display: 'flex', gap: 8 }}>
                 <button
-                  style={{ ...primaryGhostBtnStyle, background: durationMode === 'count' ? 'rgba(52,211,153,0.12)' : 'transparent' }}
+                  style={{ ...primaryGhostBtnStyle, background: durationMode === 'count' ? 'rgba(30,138,91,0.12)' : 'transparent' }}
                   onClick={() => setDurationMode('count')}
                   title="Show by count"
                 >
@@ -619,7 +608,7 @@ function DashboardPage() {
                       <span>{mockDurations[b]} min</span>
                     </div>
                     <div style={{
-                      height: 10, background: '#0B1220', border: `1px solid ${themeTokens.border}`, borderRadius: 999, overflow: 'hidden'
+                      height: 10, background: 'var(--table-row-hover)', border: `1px solid ${themeTokens.border}`, borderRadius: 999, overflow: 'hidden'
                     }}>
                       <div style={{
                         width: `${(mockDurations[b] / 400) * 100}%`,
@@ -638,7 +627,7 @@ function DashboardPage() {
                   style={{
                     height: 22,
                     borderRadius: 6,
-                    background: `rgba(16,185,129,${0.15 + ((i % 6) * 0.12)})`,
+                    background: `rgba(30,138,91,${0.10 + ((i % 6) * 0.12)})`,
                     border: `1px solid ${themeTokens.border}`
                   }}
                 />
@@ -657,8 +646,8 @@ function DashboardPage() {
 
 function ChartBlock({ title, children }) {
   return (
-    <div style={{
-      background: themeTokens.surface, border: `1px solid ${themeTokens.border}`, borderRadius: 16, padding: 16
+    <div className="card" style={{
+      borderRadius: 16, padding: 16
     }}>
       <div style={{ fontWeight: 800, marginBottom: 8 }}>{title}</div>
       <div>{children}</div>
@@ -702,8 +691,8 @@ function TimelinePage() {
 
 function FiltersPanel() {
   return (
-    <div style={{
-      background: themeTokens.surface, border: `1px solid ${themeTokens.border}`, borderRadius: 16, padding: 16, height: 'fit-content'
+    <div className="card" style={{
+      borderRadius: 16, padding: 16, height: 'fit-content'
     }}>
       <div style={{ fontWeight: 800, marginBottom: 10 }}>Filters</div>
       <div style={{ display: 'grid', gap: 10 }}>
@@ -732,32 +721,31 @@ function FiltersPanel() {
     </div>
   );
 }
-const filterLabel = { fontSize: 12, color: '#9CA3AF', fontWeight: 700 };
+const filterLabel = { fontSize: 12, color: 'var(--muted)', fontWeight: 700 };
 const selectStyle = {
   width: '100%',
-  background: '#0B1220',
+  background: 'var(--surface)',
   border: `1px solid ${themeTokens.border}`,
   color: themeTokens.text,
   padding: '8px 10px',
   borderRadius: 12,
-  marginTop: 6
+  marginTop: 6,
+  boxShadow: themeTokens.shadow,
 };
 
 function BehaviorEventCard({ onOpenVideo }) {
   return (
-    <div style={{
-      border: `1px solid ${themeTokens.border}`,
+    <div className="card" style={{
       borderRadius: 14,
-      background: themeTokens.surface,
       overflow: 'hidden'
     }}>
-      <div style={{ height: 120, background: '#0B1220', display: 'grid', placeItems: 'center', color: '#9CA3AF' }}>
+      <div style={{ height: 120, background: 'var(--table-row-hover)', display: 'grid', placeItems: 'center', color: 'var(--muted)' }}>
         [ Thumbnail ]
       </div>
       <div style={{ padding: 12, display: 'grid', gap: 6 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <StatusBadge status="Feeding" />
-          <span style={{ color: '#9CA3AF', fontSize: 12 }}>14:37:09</span>
+          <span style={{ color: 'var(--muted)', fontSize: 12 }}>14:37:09</span>
         </div>
         <div style={{ color: '#D1D5DB' }}>Confidence: 0.92</div>
         <div style={{ display: 'flex', gap: 8 }}>
@@ -777,7 +765,7 @@ function ReportsPage() {
   return (
     <AuthedLayout>
       <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: 16 }}>
-        <div style={{ background: themeTokens.surface, border: `1px solid ${themeTokens.border}`, borderRadius: 16, padding: 16 }}>
+        <div className="card" style={{ borderRadius: 16, padding: 16 }}>
           <div style={{ fontWeight: 800, marginBottom: 10 }}>Report Builder</div>
           <div style={{ display: 'grid', gap: 10 }}>
             <div>
@@ -811,7 +799,7 @@ function ReportsPage() {
             </div>
           </div>
         </div>
-        <div style={{ background: themeTokens.surface, border: `1px solid ${themeTokens.border}`, borderRadius: 16, padding: 16 }}>
+        <div className="card" style={{ borderRadius: 16, padding: 16 }}>
           <div style={{ fontWeight: 800, marginBottom: 10 }}>Preview</div>
           <EmptyState title="Report Preview" description="Preview placeholder for selected type and parameters." />
         </div>
@@ -820,7 +808,7 @@ function ReportsPage() {
         <div role="dialog" aria-modal="true" style={{
           position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'grid', placeItems: 'center', zIndex: 60
         }}>
-          <div style={{ background: themeTokens.surface, border: `1px solid ${themeTokens.border}`, borderRadius: 16, width: 420, padding: 16 }}>
+          <div className="card" style={{ width: 420, padding: 16 }}>
             <div style={{ fontWeight: 900, marginBottom: 10 }}>Export Report</div>
             <div style={{ color: '#D1D5DB', marginBottom: 16 }}>
               Your report "{type}" for {dateRange} is being generated. We will notify you when it’s ready.
@@ -840,14 +828,14 @@ function ReportsPage() {
 function AlertsPage() {
   return (
     <AuthedLayout>
-      <div style={{
-        background: themeTokens.surface, border: `1px solid ${themeTokens.border}`, borderRadius: 16, padding: 16, display: 'grid', gap: 12
+      <div className="card" style={{
+        padding: 16, display: 'grid', gap: 12
       }}>
         <div style={{ fontWeight: 900 }}>Alerts</div>
         <div style={{
           border: `1px solid ${themeTokens.border}`, borderRadius: 12, padding: 12, display: 'flex', gap: 12, alignItems: 'center'
         }}>
-          <span style={{ width: 10, height: 10, borderRadius: 999, background: themeTokens.secondary, boxShadow: themeTokens.glow }} />
+          <span style={{ width: 10, height: 10, borderRadius: 999, background: themeTokens.secondary, boxShadow: themeTokens.shadow }} />
           <div style={{ fontWeight: 800 }}>Feeding anomaly detected</div>
           <div style={{ color: '#9CA3AF', marginLeft: 'auto' }}>2 hours ago</div>
           <button style={primaryGhostBtnStyle}>View</button>
@@ -867,15 +855,15 @@ function ChatPage() {
       ) : (
         <div style={{ display: 'grid', gridTemplateRows: 'auto 1fr auto', height: 'calc(100vh - 160px)', gap: 12 }}>
           <div style={{ fontWeight: 900 }}>Welcome to VizAI Chat</div>
-          <div style={{ background: themeTokens.surface, border: `1px solid ${themeTokens.border}`, borderRadius: 16, padding: 16, overflow: 'auto' }}>
-            <div style={{ color: '#9CA3AF', marginBottom: 12 }}>Suggested:</div>
+          <div className="card" style={{ borderRadius: 16, padding: 16, overflow: 'auto' }}>
+            <div className="muted" style={{ marginBottom: 12 }}>Suggested:</div>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
               <button style={primaryGhostBtnStyle}>Show feeding trends</button>
               <button style={primaryGhostBtnStyle}>Compare active vs resting</button>
               <button style={primaryGhostBtnStyle}>Explain daily pattern</button>
             </div>
-            <div style={{ color: '#D1D5DB' }}>[ Typing indicator… ]</div>
-            <div style={{ marginTop: 12, background: '#0B1220', border: `1px solid ${themeTokens.border}`, borderRadius: 12, padding: 12 }}>
+            <div style={{ color: 'var(--text)' }}>[ Typing indicator… ]</div>
+            <div style={{ marginTop: 12, background: 'var(--table-row-hover)', border: `1px solid ${themeTokens.border}`, borderRadius: 12, padding: 12 }}>
               Sample response with chart, text and references (placeholder).
             </div>
           </div>
@@ -912,10 +900,10 @@ function AuthedLayout({ children }) {
       />
       <div style={{ padding: 16, maxWidth: 1200, margin: '0 auto' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-          <span title="Project status" style={{ fontSize: 12, color: '#9CA3AF' }}>
+          <span title="Project status" style={{ fontSize: 12, color: 'var(--muted)' }}>
             Environment: {process.env.REACT_APP_NODE_ENV || 'development'} • API: {process.env.REACT_APP_API_BASE || 'mock'}
           </span>
-          <span style={{ marginLeft: 'auto', fontSize: 12, color: '#9CA3AF' }}>
+          <span style={{ marginLeft: 'auto', fontSize: 12, color: 'var(--muted)' }}>
             Alerts: <strong style={{ color: themeTokens.secondary }}>{alertsCount}</strong>
           </span>
         </div>
@@ -924,7 +912,7 @@ function AuthedLayout({ children }) {
           <button style={primaryGhostBtnStyle} onClick={() => setConnLost(v => !v)}>
             Toggle Connection Banner
           </button>
-          <span style={{ marginLeft: 8, color: '#9CA3AF', fontSize: 12 }}>
+          <span style={{ marginLeft: 8, color: 'var(--muted)', fontSize: 12 }}>
             Research tip: behavior vocabulary is consistent across views.
           </span>
         </div>
@@ -948,7 +936,7 @@ function App() {
   const [authed, setAuthed] = useState(false);
 
   useEffect(() => {
-    document.documentElement.setAttribute('data-theme', 'dark');
+    // Theme is controlled via CSS variables; no explicit attribute required.
   }, []);
 
   const authValue = useMemo(() => ({ authed, setAuthed }), [authed]);
