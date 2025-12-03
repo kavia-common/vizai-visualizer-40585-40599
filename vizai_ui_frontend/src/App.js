@@ -46,6 +46,16 @@ export const useAuth = () => useContext(AuthContext);
 
 /**
  * PUBLIC_INTERFACE
+ * Role helper to normalize role labels used across UI.
+ */
+const ROLE_LABELS = {
+  keeper: 'Animal Keeper',
+  researcher: 'Researcher',
+  veterinarian: 'Veterinarian',
+};
+
+/**
+ * PUBLIC_INTERFACE
  * StatusBadge component: Active, Resting, Feeding
  */
 function StatusBadge({ status }) {
@@ -197,12 +207,13 @@ function Logo() {
 
 /**
  * PUBLIC_INTERFACE
- * NavBar with logo, species dropdown, tabs, date selector, user menu
+ * NavBar with logo, species dropdown, tabs, date selector, user menu.
+ * Displays "Logged in as: <Role>" sourced from AuthContext role.
  */
 function NavBar({ dateRange, setDateRange, showChatTab, species, setSpecies }) {
   const location = useLocation();
   const navigate = useNavigate();
-  const { authed } = useAuth();
+  const { authed, role } = useAuth();
 
   const isActive = (path) => location.pathname === path;
   const tabStyle = (active) => ({
@@ -324,7 +335,9 @@ function NavBar({ dateRange, setDateRange, showChatTab, species, setSpecies }) {
           border: `1px solid ${themeTokens.border}`, borderRadius: 12, background: 'var(--surface)', boxShadow: themeTokens.shadow
         }}>
           <div style={{ width: 8, height: 8, borderRadius: 999, background: '#22C55E' }} />
-          <span style={{ fontWeight: 700 }}>researcher@viz.ai</span>
+          <span style={{ fontWeight: 700 }}>
+            Logged in as: {ROLE_LABELS[role] || 'Researcher'}
+          </span>
         </div>
       </div>
     </div>
@@ -359,7 +372,8 @@ function ErrorState({ message = 'Something went wrong. Please try again.' }) {
 
 /**
  * PUBLIC_INTERFACE
- * VideoModal with playback controls, AI annotations toggle, metadata panel and basic error handling
+ * VideoModal with playback controls, AI annotations toggle, metadata panel and basic error handling.
+ * Header now: "Behavior Video – [Behavior Name] at [Timestamp]" and includes helper guidance.
  */
 function VideoModal({ open, onClose }) {
   const [playing, setPlaying] = useState(false);
@@ -404,13 +418,20 @@ function VideoModal({ open, onClose }) {
         background: themeTokens.surface, border: `1px solid ${themeTokens.border}`,
         borderRadius: 16, width: 'min(100%, 980px)', overflow: 'hidden', color: themeTokens.text, boxShadow: themeTokens.shadow
       }}>
-        <div style={{ padding: 16, borderBottom: `1px solid ${themeTokens.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--table-header-bg)' }}>
-          <div style={{ fontWeight: 800 }}>Video Preview</div>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button style={primaryGhostBtnStyle} onClick={() => setShowAI(v => !v)} title="Toggle AI annotations">
-              {showAI ? 'Hide AI' : 'Show AI'}
-            </button>
-            <button onClick={onClose} style={primaryGhostBtnStyle} title="Close">Close</button>
+        <div style={{ padding: 16, borderBottom: `1px solid ${themeTokens.border}`, display: 'grid', gap: 6, background: 'var(--table-header-bg)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ fontWeight: 800 }}>
+              Behavior Video – Moving at 2025-01-22 14:37:09
+            </div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button style={primaryGhostBtnStyle} onClick={() => setShowAI(v => !v)} title="Toggle AI annotations">
+                {showAI ? 'Hide AI' : 'Show AI'}
+              </button>
+              <button onClick={onClose} style={primaryGhostBtnStyle} title="Close">Close</button>
+            </div>
+          </div>
+          <div className="muted" style={{ fontSize: 12 }}>
+            Validate AI annotations and download clips for documentation.
           </div>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16, padding: 16 }}>
@@ -607,9 +628,53 @@ function Card({ title, description, active, disabled }) {
   );
 }
 
-// PUBLIC_INTERFACE
+/**
+ * PUBLIC_INTERFACE
+ * DashboardPage shows Behavior Count, Behavior Duration (pie/stacked bar), and Daily Activity Pattern.
+ * Now includes role-based helper texts and a global role tip block.
+ */
 function DashboardPage() {
   const [openVideo, setOpenVideo] = useState(false);
+  const { role } = useAuth();
+
+  // Section descriptions
+  const SECTION_TITLES = {
+    count: 'Behavior Count',
+    duration: 'Behavior Duration',
+    daily: 'Daily Activity Pattern',
+  };
+
+  const SECTION_DESCRIPTIONS = {
+    count: 'Quick view of occurrences for selected period.',
+    duration: 'Time spent in each behavior.',
+    daily: 'Visualize activity intensity across 24 hours.',
+  };
+
+  // Role-specific helper snippets per section
+  const ROLE_HELPERS = {
+    keeper: {
+      count: 'Identify abnormal spikes quickly.',
+      duration: 'Use count and duration charts to spot unusual patterns quickly.', // also appears in global helper
+      daily: '',
+    },
+    researcher: {
+      count: '',
+      duration: '',
+      daily: 'Spot circadian trends for analysis.',
+    },
+    veterinarian: {
+      count: '',
+      duration: 'Assess welfare through time budgets.',
+      daily: '',
+    },
+  };
+
+  // Global role-specific helper
+  const GLOBAL_ROLE_HELPER = {
+    keeper: 'Use count and duration charts to spot unusual patterns quickly.',
+    researcher: 'Click any behavior to trace exact video evidence for detailed analysis.',
+    veterinarian: 'Generate welfare reports to evaluate health and compliance.',
+  };
 
   // New behavior taxonomy used across the app
   const BEHAVIOR_CATEGORIES = [
@@ -715,7 +780,10 @@ function DashboardPage() {
     <AuthedLayout>
       <div style={{ display: 'grid', gap: 16 }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(280px,1fr))', gap: 16 }}>
-          <ChartBlock title="Behavior Count">
+          <ChartBlock title={`${SECTION_TITLES.count} – ${SECTION_DESCRIPTIONS.count}`}>
+            <div style={{ color: 'var(--muted)', fontSize: 12, marginBottom: 8 }}>
+              {role === 'keeper' ? ROLE_HELPERS.keeper.count : ''}
+            </div>
             {totalCount === 0 ? (
               <EmptyState title="No behaviors found" description="Try expanding your date range." />
             ) : (
@@ -741,7 +809,10 @@ function DashboardPage() {
           </ChartBlock>
 
           {/* Behavior Duration section with new taxonomy */}
-          <ChartBlock title="Behavior Duration">
+          <ChartBlock title={`${SECTION_TITLES.duration} – ${SECTION_DESCRIPTIONS.duration}`}>
+            <div style={{ color: 'var(--muted)', fontSize: 12, marginBottom: 8 }}>
+              {role === 'veterinarian' ? ROLE_HELPERS.veterinarian.duration : ''}
+            </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, gap: 8, alignItems: 'center' }}>
               <div style={{ color: 'var(--muted)', fontSize: 12 }}>View</div>
               <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
@@ -901,7 +972,10 @@ function DashboardPage() {
             )}
           </ChartBlock>
 
-          <ChartBlock title="Daily Activity Pattern">
+          <ChartBlock title={`${SECTION_TITLES.daily} – ${SECTION_DESCRIPTIONS.daily}`}>
+            <div style={{ color: 'var(--muted)', fontSize: 12, marginBottom: 8 }}>
+              {role === 'researcher' ? ROLE_HELPERS.researcher.daily : ''}
+            </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6,1fr)', gap: 6 }}>
               {Array.from({ length: 18 }).map((_, i) => (
                 <div key={i} title="mock heat"
@@ -916,6 +990,12 @@ function DashboardPage() {
             </div>
           </ChartBlock>
         </div>
+        <div className="card" style={{ borderRadius: 16, padding: 16 }}>
+          <div style={{ fontWeight: 800, marginBottom: 6 }}>Role Tips</div>
+          <div className="muted" style={{ fontSize: 14 }}>
+            {GLOBAL_ROLE_HELPER[role] || GLOBAL_ROLE_HELPER.researcher}
+          </div>
+        </div>
         <div>
           <button style={primaryBtnStyle} onClick={() => setOpenVideo(true)}>Open Video Modal</button>
         </div>
@@ -925,12 +1005,13 @@ function DashboardPage() {
   );
 }
 
-function ChartBlock({ title, children }) {
+function ChartBlock({ title, subtitle, children }) {
   return (
     <div className="card" style={{
       borderRadius: 16, padding: 16
     }}>
-      <div style={{ fontWeight: 800, marginBottom: 8 }}>{title}</div>
+      <div style={{ fontWeight: 800, marginBottom: 4 }}>{title}</div>
+      {subtitle ? <div className="muted" style={{ fontSize: 12, marginBottom: 8 }}>{subtitle}</div> : null}
       <div>{children}</div>
     </div>
   );
@@ -1048,7 +1129,10 @@ function BehaviorEventCard({ onOpenVideo }) {
   );
 }
 
-// PUBLIC_INTERFACE
+/**
+ * PUBLIC_INTERFACE
+ * ReportsPage renders the reports builder and preview. Includes page-level title and helper.
+ */
 function ReportsPage() {
   const [type, setType] = useState('Behavior Duration Analysis');
   const [dateRange, setDateRange] = useState('Last 7 Days');
@@ -1058,6 +1142,14 @@ function ReportsPage() {
 
   return (
     <AuthedLayout>
+      <div style={{ display: 'grid', gap: 8, marginBottom: 8 }}>
+        <div style={{ fontWeight: 900, fontSize: 18 }}>
+          Reports – Generate summaries, trends, and welfare assessments.
+        </div>
+        <div className="muted" style={{ fontSize: 12 }}>
+          Select report type and date range. Export as PDF, Excel, or PowerPoint.
+        </div>
+      </div>
       <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: 16 }}>
         <div className="card" style={{ borderRadius: 16, padding: 16 }}>
           <div style={{ fontWeight: 800, marginBottom: 10 }}>Report Builder</div>
@@ -1149,7 +1241,10 @@ function AlertsPage() {
   );
 }
 
-// PUBLIC_INTERFACE
+/**
+ * PUBLIC_INTERFACE
+ * ChatPage renders the AI chat UI (feature-gated by REACT_APP_FEATURE_FLAGS.chat).
+ */
 function ChatPage() {
   const enabled = !!featureFlags.chat || false; // phase-gated
   return (
@@ -1162,9 +1257,9 @@ function ChatPage() {
           <div className="card" style={{ borderRadius: 16, padding: 16, overflow: 'auto' }}>
             <div className="muted" style={{ marginBottom: 12 }}>Suggested:</div>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
-              <button style={primaryGhostBtnStyle}>Show feeding trends</button>
-              <button style={primaryGhostBtnStyle}>Compare active vs resting</button>
-              <button style={primaryGhostBtnStyle}>Explain daily pattern</button>
+              <button style={primaryGhostBtnStyle}>Show pacing episodes from yesterday.</button>
+              <button style={primaryGhostBtnStyle}>Generate a welfare report.</button>
+              <button style={primaryGhostBtnStyle}>Compare activity this week vs last week.</button>
             </div>
             <div style={{ color: 'var(--text)' }}>[ Typing indicator… ]</div>
             <div style={{ marginTop: 12, background: 'var(--table-row-hover)', border: `1px solid ${themeTokens.border}`, borderRadius: 12, padding: 12 }}>
@@ -1172,7 +1267,7 @@ function ChatPage() {
             </div>
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
-            <input placeholder="Ask about behaviors, trends, anomalies…" style={{ ...inputStyle, margin: 0, flex: 1 }} />
+            <input placeholder="Ask a question about behavior…" style={{ ...inputStyle, margin: 0, flex: 1 }} />
             <button style={primaryBtnStyle}>Send</button>
           </div>
         </div>
@@ -1184,6 +1279,8 @@ function ChatPage() {
 /**
  * Layout wrapper for authenticated pages:
  * includes ConnectionBanner and NavBar
+ * PUBLIC_INTERFACE
+ * Includes a demo role switcher to preview role-based helper text without backend integration.
  */
 function AuthedLayout({ children }) {
   const [connLost, setConnLost] = useState(false);
@@ -1191,6 +1288,7 @@ function AuthedLayout({ children }) {
   const [species, setSpecies] = useState('Giant Anteater');
   const showChat = !!featureFlags.chat;
   const alertsCount = 1; // mock badge
+  const { role, setRole } = useAuth();
 
   return (
     <div style={{ minHeight: '100vh', background: themeTokens.background, color: themeTokens.text }}>
@@ -1207,9 +1305,30 @@ function AuthedLayout({ children }) {
           <span title="Project status" style={{ fontSize: 12, color: 'var(--muted)' }}>
             Environment: {process.env.REACT_APP_NODE_ENV || 'development'} • API: {process.env.REACT_APP_API_BASE || 'mock'}
           </span>
-          <span style={{ marginLeft: 'auto', fontSize: 12, color: 'var(--muted)' }}>
-            Alerts: <strong style={{ color: themeTokens.secondary }}>{alertsCount}</strong>
-          </span>
+          <div style={{ marginLeft: 'auto', display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontSize: 12, color: 'var(--muted)' }}>Role:</span>
+            <select
+              aria-label="Role"
+              value={role}
+              onChange={(e) => setRole(e.target.value)}
+              style={{
+                background: 'var(--surface)',
+                color: themeTokens.text,
+                border: `1px solid ${themeTokens.border}`,
+                borderRadius: 12,
+                padding: '6px 10px',
+                fontWeight: 700,
+                boxShadow: themeTokens.shadow,
+              }}
+            >
+              <option value="keeper">Animal Keeper</option>
+              <option value="researcher">Researcher</option>
+              <option value="veterinarian">Veterinarian</option>
+            </select>
+            <span style={{ fontSize: 12, color: 'var(--muted)' }}>
+              Alerts: <strong style={{ color: themeTokens.secondary }}>{alertsCount}</strong>
+            </span>
+          </div>
         </div>
         {children}
         <div style={{ marginTop: 16 }}>
@@ -1235,15 +1354,23 @@ function ProtectedRoute({ children }) {
   return children;
 }
 
-// PUBLIC_INTERFACE
+/**
+ * PUBLIC_INTERFACE
+ * App is the root component. AuthContext now includes:
+ * - authed: boolean
+ * - setAuthed: function
+ * - role: 'keeper' | 'researcher' | 'veterinarian'
+ * - setRole: function
+ */
 function App() {
   const [authed, setAuthed] = useState(false);
+  const [role, setRole] = useState('researcher'); // 'keeper' | 'researcher' | 'veterinarian'
 
   useEffect(() => {
     // Theme is controlled via CSS variables; no explicit attribute required.
   }, []);
 
-  const authValue = useMemo(() => ({ authed, setAuthed }), [authed]);
+  const authValue = useMemo(() => ({ authed, setAuthed, role, setRole }), [authed, role]);
 
   return (
     <AuthContext.Provider value={authValue}>
