@@ -137,16 +137,14 @@ function Logo() {
    * - Accessibility: alt='VizAI Logo', title='Return to Dashboard'
    * - Explicit sizing with CSS variable fallback to guarantee rendering
    */
-  const sizePx = Number(
-    (getComputedStyle(document.documentElement).getPropertyValue('--brand-icon-size') || '').replace('px','')
-  ) || 56; // enforce exact 56px with CSS var fallback
+  const sizePx = 64; // enforce explicit fixed size via attributes and CSS fallback to --brand-icon-size
 
   return (
     <div
       style={{
         display: 'inline-flex',
-        alignItems: 'center',
-        gap: '8px',  // enforce 8px spacing
+        alignItems: 'center',     // vertical centering
+        gap: '8px',               // exactly 8px spacing
         fontWeight: 900,
         lineHeight: 1,
         color: 'var(--text)',
