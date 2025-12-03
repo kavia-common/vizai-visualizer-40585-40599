@@ -101,10 +101,19 @@
   box-shadow: var(--shadow);
 }
 
-/* Ensure the brand logo image remains visible and sized - enforce 64x64 */
+/* Brand container and logo/text spacing per spec */
+.nav .brand {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 12px !important;            /* 12px gap between icon and text */
+  margin-left: 16px !important;    /* 16px from viewport edge */
+  padding: 0 !important;
+}
+
+/* Logo sizing: default 48px, allows up to 64px via CSS var override */
 .nav img[alt="VizAI Logo"] {
-  width: var(--brand-icon-size, 64px) !important;
-  height: var(--brand-icon-size, 64px) !important;
+  width: var(--brand-icon-size, 48px) !important;
+  height: var(--brand-icon-size, 48px) !important;
   max-width: none !important;
   max-height: none !important;
   display: inline-block !important;
@@ -114,33 +123,21 @@
   filter: none !important;
   margin: 0 !important;
   padding: 0 !important;
-  /* Override any generic nav constraints that may hide/limit images */
   transform: none !important;
   mix-blend-mode: normal !important;
 }
 
-/* Brand container: remove any spacing between logo and text */
-.nav .brand {
-  display: inline-flex !important;
-  align-items: center !important;
-  gap: 0 !important;               /* no gap between icon and text */
-  margin: 0 !important;
-  padding: 0 !important;
-}
-
-/* Remove any margin/gap that might be applied to the logo or text specifically */
-.nav .brand img,
-.nav .brand .brand-text {
-  margin: 0 !important;
-  padding: 0 !important;
-}
-
-/* Ensure the brand text sits flush next to the icon and is vertically centered */
+/* Brand text style: 24px bold, brand color */
 .nav .brand .brand-text {
   display: inline-flex !important;
   align-items: center !important;
   line-height: 1 !important;
-  height: var(--brand-icon-size, 64px) !important; /* keep same height for perfect vertical centering */
+  height: auto !important;
+  font-size: 24px !important;
+  font-weight: 700 !important;
+  color: var(--primary, #1e8a5b) !important;
+  margin: 0 !important;
+  padding: 0 !important;
 }
 
 .dropdown {

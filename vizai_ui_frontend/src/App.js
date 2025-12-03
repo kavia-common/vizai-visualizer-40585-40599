@@ -142,12 +142,11 @@ function DateRangeSelector({ value, onChange }) {
 function Logo() {
   /**
    * Brand logo + text.
-   * Requirements:
-   * - Icon fixed at 64x64, vertically center-aligned with text
-   * - No spacing between the icon and the "VizAI" text
-   * - Accessibility: alt='VizAI Logo', aria-label on the clickable wrapper, title='Return to Dashboard'
+   * - Icon 48x48 by default (supports up to 64px via CSS var)
+   * - Flex alignment with a 12px gap handled via CSS
+   * - Accessibility: <img alt="VizAI Logo">; wrapper ARIA on clickable parent; tooltip on parent button
    */
-  const sizePx = 64;
+  const sizePx = 48;
 
   return (
     <div
@@ -155,8 +154,6 @@ function Logo() {
       style={{
         display: 'inline-flex',
         alignItems: 'center',
-        gap: 0, // force no gap inline; also enforced via CSS
-        fontWeight: 900,
         lineHeight: 1,
         color: 'var(--text)',
       }}
@@ -167,7 +164,6 @@ function Logo() {
         alt="VizAI Logo"
         width={sizePx}
         height={sizePx}
-        title="Return to Dashboard"
         aria-hidden={false}
         style={{
           display: 'inline-block',
@@ -179,23 +175,20 @@ function Logo() {
           visibility: 'visible',
           maxWidth: 'none',
           maxHeight: 'none',
-          margin: 0, // ensure flush
+          margin: 0,
         }}
       />
       <span
         className="brand-text"
         title="VizAI"
         style={{
-          color: 'var(--primary)',
-          fontSize: 'var(--brand-text-size, 18px)',
           letterSpacing: 0.25,
           lineHeight: 1,
           whiteSpace: 'nowrap',
-          fontWeight: 900,
-          height: `var(--brand-icon-size, ${sizePx}px)`, // vertically align with image
+          fontWeight: 700,
           display: 'inline-flex',
           alignItems: 'center',
-          margin: 0, // ensure flush, no gap
+          margin: 0,
         }}
         aria-label="VizAI"
       >
@@ -261,17 +254,17 @@ function NavBar({ dateRange, setDateRange, showChatTab, species, setSpecies }) {
       {/* [Logo + VizAI] */}
       <button
         onClick={onBrandClick}
-        title="Return to Dashboard"
+        title="Go to Dashboard"
         aria-label="VizAI Home"
         style={{
           display: 'inline-flex',
           alignItems: 'center',
-          gap: 0,
           padding: 6,
           borderRadius: 10,
           border: `1px solid transparent`,
           background: 'transparent',
           cursor: 'pointer',
+          marginLeft: 0
         }}
         className="focus-ring"
       >
