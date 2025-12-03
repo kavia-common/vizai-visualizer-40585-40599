@@ -228,6 +228,12 @@ function NavBar({ dateRange, setDateRange, showChatTab, species, setSpecies }) {
     boxShadow: active ? themeTokens.shadow : 'none'
   });
 
+  // PUBLIC_INTERFACE
+  // Go Home handler for "Home" button in top navigation
+  const onHome = () => {
+    navigate('/select-animal', { replace: false });
+  };
+
   const onBrandClick = () => {
     // Navigate to Animal Selection if unauthenticated, otherwise Dashboard
     if (!authed) {
@@ -255,6 +261,31 @@ function NavBar({ dateRange, setDateRange, showChatTab, species, setSpecies }) {
       padding: 'var(--nav-padding)', position: 'sticky', top: 0, zIndex: 10
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+        {/* Back button at header/top-left */}
+        <button
+          onClick={() => {
+            if (window.history.length > 1) {
+              window.history.go(-1);
+            } else {
+              navigate('/dashboard');
+            }
+          }}
+          className="focus-ring"
+          aria-label="Back"
+          title="Back"
+          style={{
+            ...primaryGhostBtnStyle,
+            padding: '8px 10px',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 6
+          }}
+        >
+          ←
+          <span>Back</span>
+        </button>
+
+        {/* Brand button */}
         <button
           onClick={onBrandClick}
           title="Return to Dashboard"
@@ -274,6 +305,18 @@ function NavBar({ dateRange, setDateRange, showChatTab, species, setSpecies }) {
           <Logo />
           <span className="sr-only">VizAI Home</span>
         </button>
+
+        {/* Home button in top navigation */}
+        <button
+          onClick={onHome}
+          className="focus-ring"
+          aria-label="Home"
+          title="Home"
+          style={{ ...primaryGhostBtnStyle }}
+        >
+          Home
+        </button>
+
         <div style={{ height: 24, width: 1, background: themeTokens.border }} />
         <label style={{ color: 'var(--muted)', fontSize: 12 }} title="Choose species to filter views">Species</label>
         <select
@@ -1289,6 +1332,55 @@ function AuthedLayout({ children }) {
   const showChat = !!featureFlags.chat;
   const alertsCount = 1; // mock badge
   const { role, setRole } = useAuth();
+  const location = useLocation();
+
+  // PUBLIC_INTERFACE
+  // Breadcrumbs component renders: Home > Giant Anteater > Dashboard
+  const Breadcrumbs = () => {
+    // Map route path to label
+    const pathToLabel = {
+      '/dashboard': 'Dashboard',
+      '/timeline': 'Timeline',
+      '/reports': 'Reports',
+      '/alerts': 'Alerts',
+      '/chat': 'Chat',
+      '/select-animal': 'Animal Selection',
+    };
+
+    // Relevant pages exclude login
+    const show = location.pathname !== '/login';
+    if (!show) return null;
+
+    const currentLabel = pathToLabel[location.pathname] || 'Dashboard';
+    const homeHref = '/select-animal';
+
+    return (
+      <nav
+        aria-label="Breadcrumb"
+        style={{
+          marginTop: 8,
+          marginBottom: 8,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+          color: 'var(--muted)',
+          fontSize: 12,
+        }}
+      >
+        <Link to={homeHref} title="Go to Home (Animal Selection)" aria-label="Home" style={{ color: themeTokens.primary }}>
+          Home
+        </Link>
+        <span aria-hidden>›</span>
+        <Link to={homeHref} title="Giant Anteater" aria-label="Giant Anteater" style={{ color: themeTokens.primary }}>
+          Giant Anteater
+        </Link>
+        <span aria-hidden>›</span>
+        <span aria-current="page" style={{ color: themeTokens.text, fontWeight: 700 }}>
+          {currentLabel}
+        </span>
+      </nav>
+    );
+  };
 
   return (
     <div style={{ minHeight: '100vh', background: themeTokens.background, color: themeTokens.text }}>
@@ -1301,6 +1393,14 @@ function AuthedLayout({ children }) {
         setSpecies={setSpecies}
       />
       <div style={{ padding: 16, maxWidth: 1200, margin: '0 auto' }}>
+        {/* Helper text for navigation */}
+        <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
+          Use the Back button to return to the previous view or click Home to start over.
+        </div>
+
+        {/* Breadcrumbs below top nav on relevant pages */}
+        <Breadcrumbs />
+
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
           <span title="Project status" style={{ fontSize: 12, color: 'var(--muted)' }}>
             Environment: {process.env.REACT_APP_NODE_ENV || 'development'} • API: {process.env.REACT_APP_API_BASE || 'mock'}
