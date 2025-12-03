@@ -125,6 +125,8 @@
   gap: 0 !important;               /* no gap since only image remains */
   margin-left: 16px !important;    /* exact 16px from viewport edge */
   padding: 0 !important;
+  /* Ensure no leftover text node causes spacing */
+  line-height: 0 !important;
 }
 
 /* Logo sizing: fixed 64x64 square */

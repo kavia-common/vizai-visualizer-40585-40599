@@ -207,7 +207,7 @@ function RegistrationPage() {
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
           <Logo />
         </div>
-        <div className="title" style={{ textAlign: 'center', fontWeight: 900, marginBottom: 6 }}>Create your VizAI account</div>
+        <div className="title" style={{ textAlign: 'center', fontWeight: 900, marginBottom: 6 }}>Create your account</div>
         <div className="subtitle" style={{ textAlign: 'center', color: 'var(--muted)', marginBottom: 20 }}>
           Your role determines navigation and permissions.
         </div>
@@ -265,7 +265,7 @@ function LoginPage() {
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
           <Logo />
         </div>
-        <div className="title" style={{ textAlign: 'center', fontWeight: 900, marginBottom: 6 }}>Sign in to VizAI</div>
+        <div className="title" style={{ textAlign: 'center', fontWeight: 900, marginBottom: 6 }}>Sign in</div>
         <div className="subtitle" style={{ textAlign: 'center', color: 'var(--muted)', marginBottom: 20 }}>
           Your role determines the dashboard view and available features.
         </div>
