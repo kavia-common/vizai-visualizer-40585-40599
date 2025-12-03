@@ -355,7 +355,7 @@ function VideoModal({ open, onClose }) {
                     position: 'absolute', bottom: 12, left: 12, background: 'rgba(30,138,91,0.15)', border: `1px solid ${themeTokens.border}`,
                     color: themeTokens.text, padding: '6px 8px', borderRadius: 8, fontSize: 12
                   }}>
-                    AI: Feeding (0.92)
+                    AI: Moving (0.92)
                   </div>
                 )}
               </>
@@ -365,7 +365,7 @@ function VideoModal({ open, onClose }) {
             <div style={{ fontWeight: 800, marginBottom: 8 }}>Metadata</div>
             <ul style={{ margin: 0, paddingLeft: 16, color: '#D1D5DB', lineHeight: 1.8 }}>
               <li>Species: Giant Anteater</li>
-              <li>Behavior: Feeding</li>
+              <li>Behavior: Moving</li>
               <li>Confidence: 0.92</li>
               <li>Timestamp: 2025-01-22 14:37:09</li>
               <li>Source: {process.env.REACT_APP_BACKEND_URL || 'mock://video'}</li>
@@ -534,13 +534,53 @@ function Card({ title, description, active, disabled }) {
 // PUBLIC_INTERFACE
 function DashboardPage() {
   const [openVideo, setOpenVideo] = useState(false);
-  // Mock dataset
-  const [durationMode, setDurationMode] = useState('count'); // count|duration
+
+  // New behavior taxonomy used across the app
+  const BEHAVIOR_CATEGORIES = [
+    'Recumbent',
+    'Non-Recumbent',
+    'Scratching',
+    'Self-Directed',
+    'Pacing',
+    'Moving',
+  ];
+
+  // Mock dataset replacements to include all six categories
+  const [durationMode, setDurationMode] = useState('duration'); // count|duration
   const [pieMode, setPieMode] = useState(true); // stacked/pie toggle (mocked)
-  const behaviors = ['Feeding', 'Resting', 'Active'];
-  const mockCounts = { Feeding: 18, Resting: 26, Active: 44 };
-  const mockDurations = { Feeding: 120, Resting: 340, Active: 210 }; // minutes
-  const totalCount = behaviors.reduce((a, b) => a + mockCounts[b], 0);
+
+  // Mock counts for Behavior Count chart (kept functional but taxonomy-aligned)
+  const mockCounts = {
+    'Recumbent': 22,
+    'Non-Recumbent': 15,
+    'Scratching': 7,
+    'Self-Directed': 10,
+    'Pacing': 5,
+    'Moving': 19,
+  };
+  const totalCount = BEHAVIOR_CATEGORIES.reduce((sum, k) => sum + (mockCounts[k] || 0), 0);
+
+  // Mock durations (minutes) for Behavior Duration chart
+  const mockDurations = {
+    'Recumbent': 485,       // 8h05m
+    'Non-Recumbent': 210,   // 3h30m
+    'Scratching': 35,       // 0h35m
+    'Self-Directed': 65,    // 1h05m
+    'Pacing': 40,           // 0h40m
+    'Moving': 205,          // 3h25m
+  };
+
+  // Total minutes in the mocked "day"
+  const totalDuration = BEHAVIOR_CATEGORIES.reduce((sum, k) => sum + (mockDurations[k] || 0), 0);
+
+  // Helper for tooltip formatting "Name: 8h 45m (34% of day)"
+  const fmtTooltip = (name) => {
+    const mins = mockDurations[name] || 0;
+    const hh = Math.floor(mins / 60);
+    const mm = mins % 60;
+    const pct = totalDuration > 0 ? Math.round((mins / totalDuration) * 100) : 0;
+    return `${name}: ${hh}h ${String(mm).padStart(2, '0')}m (${pct}% of day)`;
+  };
 
   return (
     <AuthedLayout>
@@ -551,17 +591,17 @@ function DashboardPage() {
               <EmptyState title="No behaviors found" description="Try expanding your date range." />
             ) : (
               <div style={{ display: 'grid', gap: 8 }}>
-                {behaviors.map(b => (
+                {BEHAVIOR_CATEGORIES.map(b => (
                   <div key={b} style={{ display: 'grid', gap: 6 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--muted)' }}>
                       <span>{b}</span>
-                      <span>{mockCounts[b]}</span>
+                      <span>{mockCounts[b] ?? 0}</span>
                     </div>
                     <div style={{
                       height: 10, background: 'var(--table-row-hover)', border: `1px solid ${themeTokens.border}`, borderRadius: 999, overflow: 'hidden'
                     }}>
                       <div style={{
-                        width: `${(mockCounts[b] / Math.max(1, totalCount)) * 100}%`,
+                        width: `${((mockCounts[b] ?? 0) / Math.max(1, totalCount)) * 100}%`,
                         background: themeTokens.gradient, height: '100%'
                       }} />
                     </div>
@@ -570,6 +610,8 @@ function DashboardPage() {
               </div>
             )}
           </ChartBlock>
+
+          {/* Behavior Duration section with new taxonomy */}
           <ChartBlock title="Behavior Duration">
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, gap: 8 }}>
               <div style={{ color: 'var(--muted)', fontSize: 12 }}>View</div>
@@ -599,27 +641,40 @@ function DashboardPage() {
             </div>
             {durationMode === 'count' ? (
               <EmptyState title="Count mode" description="Showing distribution by event count (mocked)." />
+            ) : totalDuration === 0 ? (
+              <EmptyState title="No behavior duration data available for this period." description="" />
             ) : (
               <div style={{ display: 'grid', gap: 8 }}>
-                {behaviors.map(b => (
+                {BEHAVIOR_CATEGORIES.map(b => (
                   <div key={b} style={{ display: 'grid', gap: 6 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#9CA3AF' }}>
-                      <span>{b}</span>
-                      <span>{mockDurations[b]} min</span>
+                      <span title={fmtTooltip(b)}>{b}</span>
+                      <span title={fmtTooltip(b)}>
+                        {(() => {
+                          const mins = mockDurations[b] || 0;
+                          const hh = Math.floor(mins / 60);
+                          const mm = mins % 60;
+                          return `${hh}h ${String(mm).padStart(2, '0')}m`;
+                        })()}
+                      </span>
                     </div>
                     <div style={{
                       height: 10, background: 'var(--table-row-hover)', border: `1px solid ${themeTokens.border}`, borderRadius: 999, overflow: 'hidden'
                     }}>
-                      <div style={{
-                        width: `${(mockDurations[b] / 400) * 100}%`,
-                        background: themeTokens.gradient, height: '100%'
-                      }} />
+                      <div
+                        title={fmtTooltip(b)}
+                        style={{
+                          width: `${((mockDurations[b] || 0) / Math.max(1, totalDuration)) * 100}%`,
+                          background: themeTokens.gradient, height: '100%'
+                        }}
+                      />
                     </div>
                   </div>
                 ))}
               </div>
             )}
           </ChartBlock>
+
           <ChartBlock title="Daily Activity Pattern">
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6,1fr)', gap: 6 }}>
               {Array.from({ length: 18 }).map((_, i) => (
@@ -690,6 +745,15 @@ function TimelinePage() {
 }
 
 function FiltersPanel() {
+  // Consistent behavior set for Timeline filters
+  const BEHAVIOR_CATEGORIES = [
+    'Recumbent',
+    'Non-Recumbent',
+    'Scratching',
+    'Self-Directed',
+    'Pacing',
+    'Moving',
+  ];
   return (
     <div className="card" style={{
       borderRadius: 16, padding: 16, height: 'fit-content'
@@ -697,12 +761,12 @@ function FiltersPanel() {
       <div style={{ fontWeight: 800, marginBottom: 10 }}>Filters</div>
       <div style={{ display: 'grid', gap: 10 }}>
         <div>
-          <label style={filterLabel}>Behavior</label>
-          <select style={selectStyle}>
+          <label style={filterLabel}>Behavior Type</label>
+          <select style={selectStyle} aria-label="Behavior Type">
             <option>All</option>
-            <option>Active</option>
-            <option>Resting</option>
-            <option>Feeding</option>
+            {BEHAVIOR_CATEGORIES.map(c => (
+              <option key={c}>{c}</option>
+            ))}
           </select>
         </div>
         <div>
@@ -744,10 +808,11 @@ function BehaviorEventCard({ onOpenVideo }) {
       </div>
       <div style={{ padding: 12, display: 'grid', gap: 6 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <StatusBadge status="Feeding" />
+          {/* Keep badge visual; label can be generic to avoid implying taxonomy mismatch */}
+          <StatusBadge status="Active" />
           <span style={{ color: 'var(--muted)', fontSize: 12 }}>14:37:09</span>
         </div>
-        <div style={{ color: '#D1D5DB' }}>Confidence: 0.92</div>
+        <div style={{ color: '#D1D5DB' }}>Behavior: Moving • Confidence: 0.92</div>
         <div style={{ display: 'flex', gap: 8 }}>
           <button style={primaryGhostBtnStyle} onClick={onOpenVideo}>View Video</button>
           <button style={primaryGhostBtnStyle} title="Open details">Open</button>
@@ -759,9 +824,12 @@ function BehaviorEventCard({ onOpenVideo }) {
 
 // PUBLIC_INTERFACE
 function ReportsPage() {
-  const [type, setType] = useState('Summary');
+  const [type, setType] = useState('Behavior Duration Analysis');
   const [dateRange, setDateRange] = useState('Last 7 Days');
   const [openExport, setOpenExport] = useState(false);
+
+  const isBehaviorDuration = type === 'Behavior Duration Analysis';
+
   return (
     <AuthedLayout>
       <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: 16 }}>
@@ -771,10 +839,15 @@ function ReportsPage() {
             <div>
               <label style={filterLabel}>Type</label>
               <select value={type} onChange={(e) => setType(e.target.value)} style={selectStyle}>
+                <option>Behavior Duration Analysis</option>
                 <option>Summary</option>
-                <option>Behavior Breakdown</option>
                 <option>Daily Pattern</option>
               </select>
+            </div>
+            <div style={{ color: 'var(--muted)', fontSize: 12 }}>
+              {isBehaviorDuration
+                ? 'Shows total time spent in each behavior across selected date range.'
+                : 'Choose a report type to see its description.'}
             </div>
             <div>
               <label style={filterLabel}>Date Range</label>
@@ -800,8 +873,13 @@ function ReportsPage() {
           </div>
         </div>
         <div className="card" style={{ borderRadius: 16, padding: 16 }}>
-          <div style={{ fontWeight: 800, marginBottom: 10 }}>Preview</div>
-          <EmptyState title="Report Preview" description="Preview placeholder for selected type and parameters." />
+          <div style={{ fontWeight: 800, marginBottom: 10 }}>
+            Preview {isBehaviorDuration ? '• Behavior Duration Analysis' : ''}
+          </div>
+          <EmptyState
+            title={isBehaviorDuration ? 'No behavior duration data available for this period.' : 'Report Preview'}
+            description={isBehaviorDuration ? '' : 'Preview placeholder for selected type and parameters.'}
+          />
         </div>
       </div>
       {openExport && (
