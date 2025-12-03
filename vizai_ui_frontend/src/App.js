@@ -132,18 +132,18 @@ function DateRangeSelector({ value, onChange }) {
 function Logo() {
   /**
    * Brand logo + text (single instance).
-   * - 32x32 icon via CSS variables for flexibility
+   * - 40x40 icon per requirement
    * - 8px spacing, vertical centering, bold single "VizAI" in brand color
    * - Accessibility: alt, title, and visible text
    * - CSS safeguards against hidden/opacity filters
    */
-  const size = 'var(--brand-icon-size, 32px)';
+  const sizePx = 40; // enforce exact 40x40
   return (
     <div
       style={{
         display: 'inline-flex',
         alignItems: 'center',
-        gap: 'var(--brand-gap, 8px)',
+        gap: '8px',               // enforce 8px spacing
         fontWeight: 900,
         lineHeight: 1,
         color: 'var(--text)',
@@ -151,29 +151,27 @@ function Logo() {
       aria-label="VizAI brand"
     >
       <img
-        src="/assets/vizai-logo.png"        /* Public path asset */
+        src="/assets/vizai-logo.png"
         alt="VizAI Logo"
-        width={40}
-        height={40}
+        width={sizePx}
+        height={sizePx}
         title="Return to Dashboard"
         aria-hidden={false}
         style={{
           display: 'block',
-          width: size,
-          height: size,
+          width: `${sizePx}px`,
+          height: `${sizePx}px`,
           objectFit: 'contain',
           filter: 'none',
           opacity: 1,
           visibility: 'visible',
-          maxWidth: 'none',
-          maxHeight: 'none',
         }}
       />
       <span
         title="VizAI"
         style={{
-          color: 'var(--primary)',           /* brand color */
-          fontSize: 'var(--brand-text-size)',
+          color: 'var(--primary)',
+          fontSize: 'var(--brand-text-size, 18px)',
           letterSpacing: 0.25,
           lineHeight: 1,
           whiteSpace: 'nowrap',

@@ -103,15 +103,13 @@
 
 /* Ensure the brand logo image remains visible and sized */
 .nav img[alt="VizAI Logo"] {
-  width: var(--brand-icon-size, 40px) !important;
-  height: var(--brand-icon-size, 40px) !important;
+  width: 40px !important;
+  height: 40px !important;
   display: inline-block !important;
   object-fit: contain !important;
   opacity: 1 !important;
   visibility: visible !important;
   filter: none !important;
-  max-width: none !important;
-  max-height: none !important;
 }
 
 .dropdown {
