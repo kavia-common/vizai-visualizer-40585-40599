@@ -132,15 +132,12 @@ function DateRangeSelector({ value, onChange }) {
 function Logo() {
   /**
    * Brand logo + text (single instance).
-   * Ensures:
-   * - Explicit 32x32 icon sizing
-   * - Inline-flex alignment for vertical centering
-   * - 8px spacing between logo and text
-   * - No opacity/filter that could hide the logo
-   * - Single bold "VizAI" in brand color
-   * - ARIA labels and tooltip for accessibility
+   * - 32x32 icon via CSS variables for flexibility
+   * - 8px spacing, vertical centering, bold single "VizAI" in brand color
+   * - Accessibility: alt, title, and visible text
+   * - CSS safeguards against hidden/opacity filters
    */
-  const iconSize = 32; // 32x32 per requirement
+  const size = 'var(--brand-icon-size, 32px)';
   return (
     <div
       style={{
@@ -154,26 +151,28 @@ function Logo() {
       aria-label="VizAI brand"
     >
       <img
-        src="/assets/vizai-logo.png"
-        width={iconSize}
-        height={iconSize}
+        src="/assets/vizai-logo.png"        /* Public path asset */
         alt="VizAI Logo"
-        title="Go to VizAI home"
+        width={32}
+        height={32}
+        title="Return to Dashboard"
         aria-hidden={false}
         style={{
           display: 'block',
-          width: `${iconSize}px`,
-          height: `${iconSize}px`,
+          width: size,
+          height: size,
           objectFit: 'contain',
           filter: 'none',
           opacity: 1,
           visibility: 'visible',
+          maxWidth: 'none',
+          maxHeight: 'none',
         }}
       />
       <span
         title="VizAI"
         style={{
-          color: 'var(--primary)',
+          color: 'var(--primary)',           /* brand color */
           fontSize: 'var(--brand-text-size)',
           letterSpacing: 0.25,
           lineHeight: 1,
@@ -253,6 +252,7 @@ function NavBar({ dateRange, setDateRange, showChatTab, species, setSpecies }) {
           className="focus-ring"
         >
           <Logo />
+          <span className="sr-only">VizAI Home</span>
         </button>
         <div style={{ height: 24, width: 1, background: themeTokens.border }} />
         <label style={{ color: 'var(--muted)', fontSize: 12 }} title="Choose species to filter views">Species</label>

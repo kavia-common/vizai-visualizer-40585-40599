@@ -110,6 +110,8 @@
   opacity: 1 !important;
   visibility: visible !important;
   filter: none !important;
+  max-width: none !important;
+  max-height: none !important;
 }
 
 .dropdown {
