@@ -105,8 +105,8 @@
 .nav .brand {
   display: inline-flex !important;
   align-items: center !important;
-  gap: 12px !important;            /* 12px gap between icon and text */
-  margin-left: 16px !important;    /* 16px from viewport edge */
+  gap: 12px !important;            /* exact 12px gap between icon and text */
+  margin-left: 16px !important;    /* exact 16px from viewport edge */
   padding: 0 !important;
 }
 

@@ -146,7 +146,9 @@ function Logo() {
    * - Flex alignment with a 12px gap handled via CSS
    * - Accessibility: <img alt="VizAI Logo">; wrapper ARIA on clickable parent; tooltip on parent button
    */
-  const sizePx = 64;
+  // Reference shows a rounded-square icon at 32px with 12px gap to text and 16px left margin from viewport.
+  // We keep CSS variables but pin defaults to match the reference exactly unless overridden.
+  const sizePx = 32;
 
   return (
     <div
@@ -156,11 +158,14 @@ function Logo() {
         alignItems: 'center',
         lineHeight: 1,
         color: 'var(--text)',
+        gap: '12px',               // exact gap between icon and text
+        marginLeft: '16px',        // exact left margin from viewport edge
+        padding: 0,
       }}
       aria-label="VizAI brand"
     >
       <img
-        src="/assets/vizai-logo.png"
+        src="/assets/vizai-logo-20251203.png"
         alt="VizAI Logo"
         width={sizePx}
         height={sizePx}
@@ -170,13 +175,14 @@ function Logo() {
           width: `var(--brand-icon-size, ${sizePx}px)`,
           height: `var(--brand-icon-size, ${sizePx}px)`,
           objectFit: 'contain',
-          borderRadius: 12,
+          borderRadius: 8,          // rounded square per reference
           filter: 'none',
           opacity: 1,
           visibility: 'visible',
           maxWidth: 'none',
           maxHeight: 'none',
           margin: 0,
+          padding: 0,
         }}
         title="Go to Dashboard"
       />
@@ -184,13 +190,16 @@ function Logo() {
         className="brand-text"
         title="VizAI"
         style={{
-          letterSpacing: 0.25,
+          letterSpacing: 0.2,
           lineHeight: 1,
           whiteSpace: 'nowrap',
           fontWeight: 700,
           display: 'inline-flex',
           alignItems: 'center',
           margin: 0,
+          padding: 0,
+          fontSize: 'var(--brand-text-size, 24px)', // keep 24px bold brand color unless overridden
+          color: 'var(--primary, #1e8a5b)',
         }}
         aria-label="VizAI"
       >
