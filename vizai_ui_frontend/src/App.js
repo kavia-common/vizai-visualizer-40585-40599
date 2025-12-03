@@ -170,6 +170,7 @@ function Logo() {
           width: `var(--brand-icon-size, ${sizePx}px)`,
           height: `var(--brand-icon-size, ${sizePx}px)`,
           objectFit: 'contain',
+          borderRadius: 12,
           filter: 'none',
           opacity: 1,
           visibility: 'visible',
@@ -177,6 +178,7 @@ function Logo() {
           maxHeight: 'none',
           margin: 0,
         }}
+        title="Go to Dashboard"
       />
       <span
         className="brand-text"
@@ -269,7 +271,7 @@ function NavBar({ dateRange, setDateRange, showChatTab, species, setSpecies }) {
         className="focus-ring"
       >
         <Logo />
-        <span className="sr-only">VizAI Home</span>
+        <span className="sr-only" aria-hidden="true">VizAI Home</span>
       </button>
 
       {/* [Species Dropdown] with new label copy */}

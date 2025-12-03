@@ -110,7 +110,7 @@
   padding: 0 !important;
 }
 
-/* Logo sizing: default 64px as per spec */
+/* Logo sizing: fixed 64px unless overridden by var */
 .nav img[alt="VizAI Logo"] {
   width: var(--brand-icon-size, 64px) !important;
   height: var(--brand-icon-size, 64px) !important;
@@ -118,6 +118,8 @@
   max-height: none !important;
   display: inline-block !important;
   object-fit: contain !important;
+  border-radius: 12px !important; /* reference shows rounded square icon */
+  background: transparent !important;
   opacity: 1 !important;
   visibility: visible !important;
   filter: none !important;
@@ -127,17 +129,18 @@
   mix-blend-mode: normal !important;
 }
 
-/* Brand text style: 24px bold, brand color */
+/* Brand text: single bold 'VizAI' in brand color */
 .nav .brand .brand-text {
   display: inline-flex !important;
   align-items: center !important;
   line-height: 1 !important;
   height: auto !important;
-  font-size: 24px !important;
-  font-weight: 700 !important;
+  font-size: var(--brand-text-size, 24px) !important;
+  font-weight: 800 !important; /* emphasize boldness per reference */
   color: var(--primary, #1e8a5b) !important;
   margin: 0 !important;
   padding: 0 !important;
+  letter-spacing: 0.2px !important;
 }
 
 /* Brand text style: 24px bold, brand color */
