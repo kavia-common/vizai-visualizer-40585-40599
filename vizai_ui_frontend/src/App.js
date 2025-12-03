@@ -362,35 +362,153 @@ function Card({ title, description, active, disabled }) {
  * DashboardPage: simple behavior cards and a button to open a placeholder video modal.
  */
 function DashboardPage() {
+  // mock metrics aligned with current theme/wording
   const [openVideo, setOpenVideo] = useState(false);
+  const [durationView, setDurationView] = useState('Pie'); // 'Count' | 'Duration' | 'Pie'
+
+  // mock data used across cards
+  const behaviors = [
+    { name: 'Recumbent', count: 22, minutes: 240, color: '#10B981' },
+    { name: 'Non-Recumbent', count: 17, minutes: 160, color: '#60A5FA' },
+    { name: 'Scratching', count: 15, minutes: 45, color: '#F59E0B' },
+    { name: 'Self-Directed', count: 10, minutes: 30, color: '#EC4899' },
+    { name: 'Pacing', count: 9, minutes: 25, color: '#8B5CF6' },
+    { name: 'Moving', count: 5, minutes: 18, color: '#34D399' },
+  ];
+  const totals = {
+    events: behaviors.reduce((a, b) => a + b.count, 0),
+    minutes: behaviors.reduce((a, b) => a + b.minutes, 0),
+    unique: behaviors.length,
+  };
+
+  // helpers
+  const maxCount = Math.max(...behaviors.map(b => b.count));
+  const barPct = (n) => Math.max(6, Math.round((n / maxCount) * 100)); // min 6% for visibility
+
   return (
     <AuthedLayout>
       <div style={{ display: 'grid', gap: 16 }}>
+        {/* Summary stats row */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(180px,1fr))', gap: 12 }}>
+          <SummaryStat label="Total Events" value={totals.events} />
+          <SummaryStat label="Total Minutes" value={totals.minutes} />
+          <SummaryStat label="Unique Behaviors" value={totals.unique} />
+          <SummaryStat label="Confidence (avg)" value="88%" />
+        </div>
+
+        {/* Primary 3-column section */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(280px,1fr))', gap: 16 }}>
+          {/* Behavior Count card with updated copy */}
           <div className="card" style={{ borderRadius: 16, padding: 16 }}>
-            <div style={{ fontWeight: 800, marginBottom: 4 }}>Behavior Count</div>
-            <div className="muted" style={{ fontSize: 12, marginBottom: 8 }}>Quick view of occurrences for selected period.</div>
+            <div style={{ fontWeight: 800, marginBottom: 4 }}>Behavior Count – Quick view of occurrences for selected period.</div>
+            <div className="muted" style={{ fontSize: 12, marginBottom: 8 }}>
+              Identify abnormal spikes quickly.
+            </div>
             <div style={{ display: 'grid', gap: 8 }}>
-              {['Resting', 'Feeding', 'Moving'].map((b, i) => (
-                <div key={b} style={{ display: 'grid', gap: 6 }}>
+              {behaviors.map((b) => (
+                <div key={b.name} style={{ display: 'grid', gap: 6 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--muted)' }}>
-                    <span>{b}</span>
-                    <span>{[12, 6, 19][i]}</span>
+                    <span>{b.name}</span>
+                    <span>{b.count}</span>
                   </div>
                   <div style={{ height: 10, background: 'var(--table-row-hover)', border: `1px solid ${themeTokens.border}`, borderRadius: 999, overflow: 'hidden' }}>
-                    <div style={{ width: `${[30, 15, 55][i]}%`, background: themeTokens.gradient, height: '100%' }} />
+                    <div style={{ width: `${barPct(b.count)}%`, background: themeTokens.gradient, height: '100%' }} />
                   </div>
                 </div>
               ))}
             </div>
           </div>
 
+          {/* Behavior Duration Analysis card with tabs and Pie mock */}
           <div className="card" style={{ borderRadius: 16, padding: 16 }}>
-            <div style={{ fontWeight: 800, marginBottom: 4 }}>Behavior Duration</div>
-            <div className="muted" style={{ fontSize: 12, marginBottom: 8 }}>Time spent in each behavior.</div>
-            <EmptyState title="No behavior duration data available for this period." description="" />
+            <div style={{ fontWeight: 800, marginBottom: 4 }}>Behavior Duration Analysis – Time spent in each behavior.</div>
+
+            {/* tabs */}
+            <div role="tablist" aria-label="Behavior Duration Views" style={{ display: 'flex', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
+              {['Count', 'Duration', 'Pie'].map(tab => {
+                const active = durationView === tab;
+                return (
+                  <button
+                    key={tab}
+                    role="tab"
+                    aria-selected={active}
+                    onClick={() => setDurationView(tab)}
+                    className={active ? 'tab active' : 'tab'}
+                    style={{ border: '1px solid', borderColor: active ? 'rgba(30,138,91,0.35)' : 'transparent' }}
+                  >
+                    {tab}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* stacked/summary subtitle */}
+            <div className="muted" style={{ fontSize: 12, marginBottom: 10 }}>
+              View time spent in each behavior as a {durationView === 'Pie' ? 'Pie chart' : 'stacked bar'}.
+            </div>
+
+            {/* content area */}
+            {durationView === 'Pie' ? (
+              <div>
+                <div style={{ fontWeight: 700, marginBottom: 6 }}>Behavior Duration – Pie View</div>
+                {/* Legend */}
+                <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 10 }}>
+                  {behaviors.map(b => (
+                    <div key={`legend-${b.name}`} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                      <span aria-hidden="true" style={{ width: 10, height: 10, borderRadius: 999, background: b.color, border: `1px solid ${themeTokens.border}` }} />
+                      <span className="muted" style={{ fontSize: 12 }}>{b.name}</span>
+                    </div>
+                  ))}
+                </div>
+                {/* Pie mock (accessible) */}
+                <div aria-label="Pie chart placeholder" role="img"
+                  style={{
+                    width: '100%',
+                    maxWidth: 320,
+                    aspectRatio: '1 / 1',
+                    marginInline: 'auto',
+                    borderRadius: '50%',
+                    background: `conic-gradient(
+                      ${behaviors.map((b, i, arr) => {
+                        const total = totals.minutes || 1;
+                        const angle = Math.round((b.minutes / total) * 360);
+                        const start = arr.slice(0, i).reduce((s, x) => s + Math.round((x.minutes / total) * 360), 0);
+                        return `${b.color} ${start}deg ${start + angle}deg`;
+                      }).join(',')}
+                    )`,
+                    border: `1px solid ${themeTokens.border}`,
+                    boxShadow: themeTokens.shadow
+                  }}
+                />
+              </div>
+            ) : (
+              <div>
+                <div style={{ fontWeight: 700, marginBottom: 6 }}>
+                  {durationView === 'Count' ? 'Behavior Count – Stacked Bar' : 'Behavior Duration – Stacked Bar'}
+                </div>
+                <div style={{ display: 'grid', gap: 8 }}>
+                  {behaviors.map(b => {
+                    const num = durationView === 'Count' ? b.count : b.minutes;
+                    const denom = Math.max(...behaviors.map(x => durationView === 'Count' ? x.count : x.minutes));
+                    const pct = Math.max(6, Math.round((num / denom) * 100));
+                    return (
+                      <div key={`stack-${b.name}`} style={{ display: 'grid', gap: 6 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--muted)' }}>
+                          <span>{b.name}</span>
+                          <span>{num}{durationView === 'Duration' ? ' min' : ''}</span>
+                        </div>
+                        <div style={{ height: 10, background: 'var(--table-row-hover)', border: `1px solid ${themeTokens.border}`, borderRadius: 999, overflow: 'hidden' }}>
+                          <div style={{ width: `${pct}%`, background: b.color, height: '100%' }} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
 
+          {/* Daily Activity Pattern stays as before */}
           <div className="card" style={{ borderRadius: 16, padding: 16 }}>
             <div style={{ fontWeight: 800, marginBottom: 4 }}>Daily Activity Pattern</div>
             <div className="muted" style={{ fontSize: 12, marginBottom: 8 }}>Visualize activity intensity across 24 hours.</div>
@@ -409,10 +527,20 @@ function DashboardPage() {
           </div>
         </div>
 
-        <div>
-          <button style={primaryBtnStyle} onClick={() => setOpenVideo(true)}>Open Video Modal</button>
+        {/* Quick Actions row (restored) */}
+        <div className="card" style={{ borderRadius: 16, padding: 12 }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ fontWeight: 800 }}>Quick Actions</div>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <Link to="/timeline" className="btn" style={{ textDecoration: 'none' }}>Open Timeline</Link>
+              <Link to="/reports" className="btn-outline" style={{ textDecoration: 'none' }}>Build Report</Link>
+              <button className="btn-outline" onClick={() => setOpenVideo(true)}>Preview Video</button>
+            </div>
+          </div>
         </div>
       </div>
+
+      {/* video modal unchanged */}
       {openVideo && (
         <div role="dialog" aria-modal="true" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, zIndex: 50 }}>
           <div className="card" style={{ width: 'min(100%, 720px)', padding: 16 }}>
@@ -599,6 +727,17 @@ const selectStyle = {
   marginTop: 6,
   boxShadow: themeTokens.shadow,
 };
+
+// PUBLIC_INTERFACE
+function SummaryStat({ label, value }) {
+  /** A compact stat card used on the Dashboard summary row. */
+  return (
+    <div className="card" style={{ padding: 12, borderRadius: 16 }}>
+      <div className="muted" style={{ fontSize: 12, marginBottom: 4, fontWeight: 700 }}>{label}</div>
+      <div style={{ fontWeight: 900, fontSize: 20 }}>{value}</div>
+    </div>
+  );
+}
 
 /**
  * PUBLIC_INTERFACE
