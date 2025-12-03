@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState, createContext, useContext, useRef 
 import { BrowserRouter, Routes, Route, Navigate, Link, useLocation, useNavigate } from 'react-router-dom';
 import './index.css';
 import './App.css';
+import AIHelpChat from './components/AIHelpChat';
 
 /**
  * PUBLIC_INTERFACE
@@ -563,6 +564,8 @@ function RegistrationPage() {
           Already have an account? <Link to="/login">Sign in</Link>
         </div>
       </form>
+      {/* Persistent help widget on unauthenticated page */}
+      <AIHelpChat />
     </div>
   );
 }
@@ -613,6 +616,8 @@ function LoginPage() {
           New to VizAI? <Link to="/register">Create an account</Link>
         </div>
       </form>
+      {/* Persistent help widget on unauthenticated page */}
+      <AIHelpChat />
     </div>
   );
 }
@@ -1877,6 +1882,8 @@ function AuthedLayout({ children }) {
           </div>
         </div>
       </div>
+      {/* Persistent help widget on authed pages */}
+      <AIHelpChat />
     </div>
   );
 }

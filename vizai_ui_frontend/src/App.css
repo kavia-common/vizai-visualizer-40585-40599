@@ -1,6 +1,11 @@
 /* Keep a minimal sheet for compatibility and quick helpers (variable-driven) */
 .App { min-height: 100vh; }
 
+/* Optional helper for overlays */
+.z-overlay {
+  z-index: 70;
+}
+
 /* Gradient text using global gradient */
 .gradient-text {
   background: var(--gradient);
