@@ -778,6 +778,7 @@ function SpeciesCard({ data }) {
  * Dashboard with interactive pie/stacked legend to navigate to Timeline with filter
  */
 function DashboardPage() {
+  // Align style and copy with Select Animal: bold headers, helper microcopy, card treatments, button tone
   const [openVideo, setOpenVideo] = useState(false);
 
   const [durationMode, setDurationMode] = useState('duration'); // count|duration
@@ -847,6 +848,27 @@ function DashboardPage() {
   return (
     <AuthedLayout>
       <div style={{ display: 'grid', gap: 16 }}>
+        {/* Page header aligned to Select Animal tone */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginBottom: 4 }}>
+          <div style={{ fontWeight: 900, fontSize: 20, flex: '0 0 auto' }}>Overview — Behavior Insights</div>
+          <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, alignItems: 'center' }}>
+            <button
+              style={primaryGhostBtnStyle}
+              title="Helpful tips"
+              aria-label="Show dashboard tips"
+            >
+              Tips
+            </button>
+          </div>
+        </div>
+
+        {/* Helper microcopy bar mirroring Select Animal helper tone */}
+        <div className="card" style={{ padding: 12, borderRadius: 14, display: 'flex', gap: 8, alignItems: 'center' }}>
+          <div style={{ color: 'var(--muted)', fontSize: 12 }}>
+            Tip: Click any legend item to jump to Timeline with that behavior pre-filtered.
+          </div>
+        </div>
+
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(280px,1fr))', gap: 16 }}>
           <ChartBlock title="Behavior Count">
             {totalCount === 0 ? (
@@ -915,7 +937,7 @@ function DashboardPage() {
             ) : (
               <>
                 <div style={{ fontWeight: 800, marginBottom: 6 }}>
-                  {pieMode ? 'Behavior Duration – Pie View' : 'Behavior Duration – Stacked Bar View'}
+                  {pieMode ? 'Behavior Duration — Pie View' : 'Behavior Duration — Stacked Bar View'}
                 </div>
 
                 {pieMode ? (
@@ -930,6 +952,7 @@ function DashboardPage() {
                           <button key={b}
                                   onClick={() => navigate(`/timeline?behavior=${encodeURIComponent(b)}`)}
                                   title={`${b}: ${formatHhMm(mins)} (${pct}%) • Click to view in Timeline`}
+                                  aria-label={`Filter timeline by ${b}`}
                                   style={{ display: 'inline-flex', alignItems: 'center', gap: 6, border: `1px solid ${themeTokens.border}`, padding: '6px 8px', borderRadius: 10, background: 'var(--surface)', cursor: 'pointer' }}>
                             <span aria-hidden style={{ width: 10, height: 10, borderRadius: 999, background: color, boxShadow: themeTokens.shadow }} />
                             <span style={{ fontSize: 12, color: themeTokens.text }}>{b}</span>
@@ -951,6 +974,7 @@ function DashboardPage() {
                         cursor: 'pointer'
                       }}
                       title="Pie chart (click to open Timeline with filter)"
+                      aria-label="Open Timeline filtered by Moving"
                     />
                   </div>
                 ) : (
@@ -965,6 +989,7 @@ function DashboardPage() {
                       display: 'flex'
                     }}
                       title="Cumulative time distribution across behaviors"
+                      aria-label="Cumulative time distribution across behaviors"
                     >
                       {BEHAVIOR_CATEGORIES.map((b, idx) => {
                         const mins = mockDurations[b] || 0;
@@ -1002,8 +1027,15 @@ function DashboardPage() {
             </div>
           </ChartBlock>
         </div>
-        <div>
-          <button style={primaryBtnStyle} onClick={() => setOpenVideo(true)}>Open Video Modal</button>
+
+        {/* Action area with consistent tone */}
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <button style={primaryBtnStyle} onClick={() => setOpenVideo(true)} title="Open video preview">
+            Open Video Modal
+          </button>
+          <span style={{ color: 'var(--muted)', fontSize: 12 }}>
+            You can continue exploring while previews are open.
+          </span>
         </div>
       </div>
       <VideoModal open={openVideo} onClose={() => setOpenVideo(false)} />
@@ -1013,9 +1045,7 @@ function DashboardPage() {
 
 function ChartBlock({ title, children }) {
   return (
-    <div className="card" style={{
-      borderRadius: 16, padding: 16
-    }}>
+    <div className="card" style={{ borderRadius: 16, padding: 16 }}>
       <div style={{ fontWeight: 800, marginBottom: 8 }}>{title}</div>
       <div>{children}</div>
     </div>
@@ -1036,7 +1066,17 @@ function TimelinePage() {
 
   return (
     <AuthedLayout>
-      <TimelineWithLeftPanel initialBehavior={initialBehavior} view={view} setView={setView} zoom={zoom} setZoom={setZoom} count={count} setCount={setCount} openVideo={openVideo} setOpenVideo={setOpenVideo} />
+      <TimelineWithLeftPanel
+        initialBehavior={initialBehavior}
+        view={view}
+        setView={setView}
+        zoom={zoom}
+        setZoom={setZoom}
+        count={count}
+        setCount={setCount}
+        openVideo={openVideo}
+        setOpenVideo={setOpenVideo}
+      />
     </AuthedLayout>
   );
 }
@@ -1065,18 +1105,46 @@ function TimelineWithLeftPanel({ initialBehavior, view, setView, zoom, setZoom, 
                 ))}
               </select>
             </div>
+            <div className="muted" style={{ marginTop: 8, fontSize: 12 }}>
+              Choose a behavior to refine results. You can switch views anytime.
+            </div>
           </div>
         }
       />
       <div style={{ display: 'grid', gap: 12 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{ color: '#9CA3AF' }}>{count} results</div>
+        {/* Header aligned to Select Animal style */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+          <div style={{ fontWeight: 900, fontSize: 20, flex: '0 0 auto' }}>Behavior Explorer</div>
+          <div className="muted" style={{ fontSize: 12 }}>
+            {count} results
+          </div>
           <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, alignItems: 'center' }}>
-            <button style={controlBtnStyle} onClick={() => setZoom(z => Math.max(25, z - 25))} title="Zoom out">-</button>
-            <div style={{ minWidth: 48, textAlign: 'center' }}>{zoom}%</div>
-            <button style={controlBtnStyle} onClick={() => setZoom(z => Math.min(200, z + 25))} title="Zoom in">+</button>
-            <button style={{ ...primaryGhostBtnStyle, background: view === 'grid' ? 'rgba(52,211,153,0.12)' : 'transparent' }} onClick={() => setView('grid')}>Grid</button>
-            <button style={{ ...primaryGhostBtnStyle, background: view === 'list' ? 'rgba(52,211,153,0.12)' : 'transparent' }} onClick={() => setView('list')}>List</button>
+            <button style={controlBtnStyle} onClick={() => setZoom(z => Math.max(25, z - 25))} title="Zoom out" aria-label="Zoom out">-</button>
+            <div style={{ minWidth: 48, textAlign: 'center' }} aria-live="polite">{zoom}%</div>
+            <button style={controlBtnStyle} onClick={() => setZoom(z => Math.min(200, z + 25))} title="Zoom in" aria-label="Zoom in">+</button>
+            <button
+              style={{ ...primaryGhostBtnStyle, background: view === 'grid' ? 'rgba(52,211,153,0.12)' : 'transparent' }}
+              onClick={() => setView('grid')}
+              title="Grid view"
+              aria-pressed={view === 'grid'}
+            >
+              Grid
+            </button>
+            <button
+              style={{ ...primaryGhostBtnStyle, background: view === 'list' ? 'rgba(52,211,153,0.12)' : 'transparent' }}
+              onClick={() => setView('list')}
+              title="List view"
+              aria-pressed={view === 'list'}
+            >
+              List
+            </button>
+          </div>
+        </div>
+
+        {/* Helper microcopy bar mirroring Select Animal tip card */}
+        <div className="card" style={{ padding: 12, borderRadius: 14, display: 'flex', gap: 8, alignItems: 'center' }}>
+          <div style={{ color: 'var(--muted)', fontSize: 12 }}>
+            Tip: Open any event to preview video. Annotations can be toggled in the modal.
           </div>
         </div>
 
@@ -1105,7 +1173,7 @@ const selectStyle = {
 function BehaviorEventCard({ onOpenVideo }) {
   return (
     <div className="card" style={{
-      borderRadius: 14,
+      borderRadius: 16,
       overflow: 'hidden'
     }}>
       <div style={{ height: 120, background: 'var(--table-row-hover)', display: 'grid', placeItems: 'center', color: 'var(--muted)' }}>
@@ -1114,11 +1182,13 @@ function BehaviorEventCard({ onOpenVideo }) {
       <div style={{ padding: 12, display: 'grid', gap: 6 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <StatusBadge status="Active" />
-          <span style={{ color: 'var(--muted)', fontSize: 12 }}>14:37:09</span>
+          <span style={{ color: 'var(--muted)', fontSize: 12 }} aria-label="Event time">14:37:09</span>
         </div>
-        <div style={{ color: '#D1D5DB' }}>Behavior: Moving • Confidence: 0.92</div>
+        <div className="muted" style={{ fontSize: 14 }}>
+          Behavior: Moving • Confidence: 0.92
+        </div>
         <div style={{ display: 'flex', gap: 8 }}>
-          <button style={primaryGhostBtnStyle} onClick={onOpenVideo}>View Video</button>
+          <button style={primaryGhostBtnStyle} onClick={onOpenVideo} title="Preview video">View Video</button>
           <button style={primaryGhostBtnStyle} title="Open details">Open</button>
         </div>
       </div>
