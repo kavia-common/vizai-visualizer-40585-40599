@@ -1,7 +1,39 @@
-import React, { useEffect, useMemo, useState, createContext, useContext } from 'react';
+import React, { useEffect, useMemo, useState, createContext, useContext, useRef } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Link, useLocation, useNavigate } from 'react-router-dom';
 import './index.css';
 import './App.css';
+
+/**
+ * PUBLIC_INTERFACE
+ * Tokens are driven by CSS variables. This map reads from getComputedStyle for inline styles.
+ */
+const cssVar = (name) => getComputedStyle(document.documentElement).getPropertyValue(name) || '';
+const themeTokens = {
+  get primary() { return cssVar('--primary').trim() || '#1e8a5b'; },
+  get primary600() { return cssVar('--primary-600').trim() || '#177148'; },
+  get secondary() { return cssVar('--secondary').trim() || '#F59E0B'; },
+  get error() { return cssVar('--error').trim() || '#DC2626'; },
+  get background() { return cssVar('--bg').trim() || '#F3F4F6'; },
+  get surface() { return cssVar('--surface').trim() || '#FFFFFF'; },
+  get text() { return cssVar('--text').trim() || '#111827'; },
+  get gradient() { return cssVar('--gradient').trim() || 'linear-gradient(135deg,#1e8a5b 0%,#34d399 100%)'; },
+  get subtle() { return cssVar('--table-header-bg').trim() || '#F9FAFB'; },
+  get border() { return cssVar('--border').trim() || '#E5E7EB'; },
+  get shadow() { return cssVar('--shadow').trim() || '0 1px 2px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.1)'; },
+};
+
+/**
+ * PUBLIC_INTERFACE
+ * Basic feature flags from env (phase gating). Use REACT_APP_FEATURE_FLAGS JSON.
+ */
+const featureFlags = (() => {
+  try {
+    const raw = process.env.REACT_APP_FEATURE_FLAGS || '{}';
+    return JSON.parse(raw);
+  } catch {
+    return {};
+  }
+})();
 
 /**
  * PUBLIC_INTERFACE
@@ -14,99 +46,151 @@ export const useAuth = () => useContext(AuthContext);
 
 /**
  * PUBLIC_INTERFACE
- * Tokens are driven by CSS variables. This map reads from getComputedStyle for inline styles.
+ * StatusBadge component: Active, Resting, Feeding
  */
-const cssVar = (name) => getComputedStyle(document.documentElement).getPropertyValue(name) || '';
-const themeTokens = {
-  get primary() { return cssVar('--primary').trim() || '#1e8a5b'; },
-  get secondary() { return cssVar('--secondary').trim() || '#F59E0B'; },
-  get error() { return cssVar('--error').trim() || '#DC2626'; },
-  get background() { return cssVar('--bg').trim() || '#F3F4F6'; },
-  get surface() { return cssVar('--surface').trim() || '#FFFFFF'; },
-  get text() { return cssVar('--text').trim() || '#111827'; },
-  get gradient() { return cssVar('--gradient').trim() || 'linear-gradient(135deg,#1e8a5b 0%,#34d399 100%)'; },
-  get border() { return cssVar('--border').trim() || '#E5E7EB'; },
-  get shadow() { return cssVar('--shadow').trim() || '0 1px 2px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.1)'; },
-};
+function StatusBadge({ status }) {
+  /** Badge uses primary/secondary palette via CSS variables */
+  const map = {
+    Active: { bg: 'rgba(30,138,91,0.12)', color: themeTokens.primary },
+    Resting: { bg: 'rgba(107,114,128,0.18)', color: 'var(--muted)' },
+    Feeding: { bg: 'rgba(245,158,11,0.18)', color: themeTokens.secondary },
+  };
+  const cfg = map[status] || map.Active;
+  return (
+    <span
+      className="badge"
+      style={{
+        background: cfg.bg,
+        color: cfg.color,
+      }}
+      aria-label={`status ${status}`}
+      title={`Behavior status: ${status}`}
+    >
+      <span style={{
+        width: 8, height: 8, borderRadius: 999, background: cfg.color
+      }} />
+      {status}
+    </span>
+  );
+}
 
 /**
  * PUBLIC_INTERFACE
- * Basic feature flags from env for forward compatibility.
+ * ConnectionBanner: togglable banner for demo
  */
-const featureFlags = (() => {
-  try {
-    const raw = process.env.REACT_APP_FEATURE_FLAGS || '{}';
-    return JSON.parse(raw);
-  } catch {
-    return {};
-  }
-})();
-
-// Simple styles
-const primaryBtnStyle = {
-  background: themeTokens.gradient,
-  color: 'var(--surface)',
-  fontWeight: 800,
-  border: 'none',
-  borderRadius: 12,
-  padding: '10px 14px',
-  cursor: 'pointer',
-  boxShadow: themeTokens.shadow,
-};
-const primaryGhostBtnStyle = {
-  background: 'transparent',
-  color: themeTokens.text,
-  fontWeight: 800,
-  border: `1px solid ${themeTokens.border}`,
-  borderRadius: 12,
-  padding: '8px 12px',
-  cursor: 'pointer',
-};
-
-function Logo() {
-  /**
-   * PUBLIC_INTERFACE
-   * Image-only logo for all auth and app layouts.
-   * Ensures no brand text is rendered (no adjacent text nodes or pseudo-elements).
-   */
-  const sizePx = 64;
+function ConnectionBanner({ visible, message = 'Connection lost. Reconnecting…' }) {
+  if (!visible) return null;
   return (
-    <div
-      className="brand"
-      style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        lineHeight: 0,
-        gap: 0,
-        marginLeft: '16px',
-        padding: 0,
-      }}
-      aria-label="VizAI brand"
-    >
-      <img
-        src="/assets/vizai-logo-20251203.png"
-        alt="VizAI Logo"
-        width={sizePx}
-        height={sizePx}
-        style={{
-          display: 'inline-block',
-          width: `${sizePx}px`,
-          height: `${sizePx}px`,
-          objectFit: 'contain',
-          borderRadius: 12,
-          margin: 0,
-          padding: 0,
-        }}
-      />
+    <div role="status" style={{
+      width: '100%',
+      background: 'rgba(220,38,38,0.12)',
+      color: themeTokens.error,
+      padding: '8px 16px',
+      textAlign: 'center',
+      fontWeight: 600,
+      borderBottom: `1px solid ${themeTokens.border}`
+    }}>
+      {message}
     </div>
   );
 }
 
 /**
  * PUBLIC_INTERFACE
- * NavBar tabs only show Dashboard, Timeline, Reports (no Alerts/Help/Chat tabs).
+ * DateRangeSelector: Today, Last 7 Days, Last 30 Days, Custom…
  */
-function NavBar() {
+function DateRangeSelector({ value, onChange }) {
+  const options = ['Today', 'Last 7 Days', 'Last 30 Days', 'Custom…'];
+  return (
+    <div style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>
+      <span style={{ color: 'var(--muted)', fontSize: 12 }}>Date Range</span>
+      <select
+        aria-label="Date Range"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        style={{
+          background: themeTokens.surface,
+          color: themeTokens.text,
+          border: `1px solid ${themeTokens.border}`,
+          borderRadius: 12,
+          padding: '8px 12px',
+          fontWeight: 600,
+          boxShadow: themeTokens.shadow,
+        }}
+      >
+        {options.map(opt => (
+          <option key={opt} value={opt}>{opt}</option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
+/**
+ * Layout components
+ */
+function Logo() {
+  /**
+   * Brand logo + text (single instance).
+   * - 32x32 icon via CSS variables for flexibility
+   * - 8px spacing, vertical centering, bold single "VizAI" in brand color
+   * - Accessibility: alt, title, and visible text
+   * - CSS safeguards against hidden/opacity filters
+   */
+  const size = 'var(--brand-icon-size, 32px)';
+  return (
+    <div
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 'var(--brand-gap, 8px)',
+        fontWeight: 900,
+        lineHeight: 1,
+        color: 'var(--text)',
+      }}
+      aria-label="VizAI brand"
+    >
+      <img
+        src="/assets/vizai-logo.png"        /* Public path asset */
+        alt="VizAI Logo"
+        width={32}
+        height={32}
+        title="Return to Dashboard"
+        aria-hidden={false}
+        style={{
+          display: 'block',
+          width: size,
+          height: size,
+          objectFit: 'contain',
+          filter: 'none',
+          opacity: 1,
+          visibility: 'visible',
+          maxWidth: 'none',
+          maxHeight: 'none',
+        }}
+      />
+      <span
+        title="VizAI"
+        style={{
+          color: 'var(--primary)',           /* brand color */
+          fontSize: 'var(--brand-text-size)',
+          letterSpacing: 0.25,
+          lineHeight: 1,
+          whiteSpace: 'nowrap',
+          fontWeight: 900,
+        }}
+      >
+        VizAI
+      </span>
+    </div>
+  );
+}
+
+/**
+ * PUBLIC_INTERFACE
+ * NavBar with logo, species dropdown, tabs, date selector, user menu
+ */
+function NavBar({ dateRange, setDateRange, showChatTab, species, setSpecies }) {
   const location = useLocation();
   const navigate = useNavigate();
   const { authed } = useAuth();
@@ -125,35 +209,122 @@ function NavBar() {
   });
 
   const onBrandClick = () => {
+    // Navigate to Animal Selection if unauthenticated, otherwise Dashboard
     if (!authed) {
-      navigate('/login');
+      navigate('/select-animal');
       return;
     }
     navigate('/dashboard');
   };
 
-  return (
-    <div className="nav" style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', alignItems: 'center', gap: 16, padding: 'var(--nav-padding)', position: 'sticky', top: 0, zIndex: 10 }}>
-      <button
-        onClick={onBrandClick}
-        title="Go to Dashboard"
-        aria-label="VizAI Home"
-        style={{ display: 'inline-flex', alignItems: 'center', padding: 6, borderRadius: 10, border: `1px solid transparent`, background: 'transparent', cursor: 'pointer' }}
-        className="focus-ring"
-      >
-        <Logo />
-        <span className="sr-only" aria-hidden="true">VizAI Home</span>
-      </button>
+  // Alert badge (mock) for Alerts tab
+  const alertsBadge = (
+    <span aria-label="notifications" style={{
+      position: 'absolute', top: -4, right: -4,
+      width: 18, height: 18, borderRadius: 999,
+      background: themeTokens.secondary, color: 'var(--surface)',
+      fontSize: 11, fontWeight: 900,
+      display: 'grid', placeItems: 'center',
+      boxShadow: themeTokens.shadow
+    }}>1</span>
+  );
 
-      <div style={{ display: 'flex', gap: 6, justifyContent: 'center', alignItems: 'center' }}>
-        <Link to="/dashboard" style={tabStyle(isActive('/dashboard'))} title="Dashboard">Dashboard</Link>
-        <Link to="/timeline" style={tabStyle(isActive('/timeline'))} title="Timeline">Timeline</Link>
-        <Link to="/reports" style={tabStyle(isActive('/reports'))} title="Reports">Reports</Link>
+  return (
+    <div className="nav" style={{
+      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+      padding: 'var(--nav-padding)', position: 'sticky', top: 0, zIndex: 10
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+        <button
+          onClick={onBrandClick}
+          title="Return to Dashboard"
+          aria-label="VizAI Home"
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '8px',
+            padding: 6,
+            borderRadius: 10,
+            border: `1px solid transparent`,
+            background: 'transparent',
+            cursor: 'pointer',
+          }}
+          className="focus-ring"
+        >
+          <Logo />
+          <span className="sr-only">VizAI Home</span>
+        </button>
+        <div style={{ height: 24, width: 1, background: themeTokens.border }} />
+        <label style={{ color: 'var(--muted)', fontSize: 12 }} title="Choose species to filter views">Species</label>
+        <select
+          aria-label="Species"
+          value={species}
+          onChange={(e) => setSpecies(e.target.value)}
+          style={{
+            background: 'var(--surface)',
+            color: themeTokens.text,
+            border: `1px solid ${themeTokens.border}`,
+            borderRadius: 12,
+            padding: '8px 12px',
+            fontWeight: 700,
+            boxShadow: themeTokens.shadow
+          }}
+        >
+          <option value="Giant Anteater">Giant Anteater</option>
+          <option value="Pangolin" disabled>pangolin (Coming Soon)</option>
+          <option value="Sloth" disabled>sloth (Coming Soon)</option>
+        </select>
+
+        <div style={{ marginLeft: 8, display: 'flex', gap: 4 }}>
+          <Link to="/dashboard" style={tabStyle(isActive('/dashboard'))} title="Overview metrics">
+            Dashboard
+          </Link>
+          <Link to="/timeline" style={tabStyle(isActive('/timeline'))} title="Behavior Explorer">
+            Timeline
+          </Link>
+          <Link to="/reports" style={tabStyle(isActive('/reports'))} title="Generate reports">
+            Reports
+          </Link>
+          <span style={{ position: 'relative' }}>
+            <Link to="/alerts" style={tabStyle(isActive('/alerts'))} title="Alerts Center">
+              Alerts
+            </Link>
+            {alertsBadge}
+          </span>
+          <Link
+            to={showChatTab ? '/chat' : '/dashboard'}
+            style={{ ...tabStyle(isActive('/chat')), opacity: showChatTab ? 1 : 0.5, cursor: showChatTab ? 'pointer' : 'not-allowed' }}
+            aria-disabled={!showChatTab}
+            title={showChatTab ? 'AI Chat (beta)' : 'AI Chat (disabled)'}
+          >
+            Chat
+          </Link>
+        </div>
+      </div>
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+        <DateRangeSelector value={dateRange} onChange={setDateRange} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <StatusBadge status="Active" />
+          <div title="Keyboard: ? for tips" style={{
+            padding: '6px 10px', borderRadius: 999, border: `1px dashed ${themeTokens.border}`, color: 'var(--muted)', fontSize: 12
+          }}>Tips: Press ?</div>
+        </div>
+        <div style={{
+          display: 'inline-flex', alignItems: 'center', gap: 8, padding: '8px 10px',
+          border: `1px solid ${themeTokens.border}`, borderRadius: 12, background: 'var(--surface)', boxShadow: themeTokens.shadow
+        }}>
+          <div style={{ width: 8, height: 8, borderRadius: 999, background: '#22C55E' }} />
+          <span style={{ fontWeight: 700 }}>researcher@viz.ai</span>
+        </div>
       </div>
     </div>
   );
 }
 
+/**
+ * Empty & Error States (global)
+ */
 function EmptyState({ title = 'No data to display', description = 'Try adjusting filters or date range.' }) {
   return (
     <div style={{
@@ -179,66 +350,151 @@ function ErrorState({ message = 'Something went wrong. Please try again.' }) {
 
 /**
  * PUBLIC_INTERFACE
- * Registration page (mock). Stores role in auth context on success then redirects to Login.
+ * VideoModal with playback controls, AI annotations toggle, metadata panel and basic error handling
  */
-function RegistrationPage() {
-  const { setRole } = useAuth();
+function VideoModal({ open, onClose }) {
+  const [playing, setPlaying] = useState(false);
+  const [speed, setSpeed] = useState(1);
+  const [showAI, setShowAI] = useState(true);
   const [error, setError] = useState('');
-  const navigate = useNavigate();
+  const playerRef = useRef(null);
 
-  const onSubmit = (e) => {
-    e.preventDefault();
-    const fd = new FormData(e.currentTarget);
-    const email = String(fd.get('email') || '');
-    const password = String(fd.get('password') || '');
-    const role = String(fd.get('role') || '');
-    if (!email || !password || !role) {
-      setError('Please complete all fields.');
-      return;
+  useEffect(() => {
+    if (!open) {
+      setPlaying(false);
+      setSpeed(1);
+      setError('');
     }
-    // Mock success: persist role for next login step
-    setRole(role);
-    setError('');
-    navigate('/login', { replace: true });
+  }, [open]);
+
+  if (!open) return null;
+
+  const togglePlay = () => {
+    if (error) return;
+    setPlaying(p => !p);
+  };
+
+  const cycleSpeed = () => {
+    setSpeed(s => {
+      const next = s === 1 ? 1.5 : s === 1.5 ? 2 : 1;
+      return next;
+    });
+  };
+
+  const simulateError = () => {
+    setError('Unable to load video stream. Please try again later.');
+    setPlaying(false);
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: themeTokens.background, color: themeTokens.text, display: 'grid', placeItems: 'center', padding: 24 }}>
-      <form onSubmit={onSubmit} style={{
-        width: 'min(100%, 520px)', background: themeTokens.surface, border: `1px solid ${themeTokens.border}`, borderRadius: 16, padding: 24, boxShadow: themeTokens.shadow
+    <div role="dialog" aria-modal="true" style={{
+      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.35)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, zIndex: 50
+    }}>
+      <div style={{
+        background: themeTokens.surface, border: `1px solid ${themeTokens.border}`,
+        borderRadius: 16, width: 'min(100%, 980px)', overflow: 'hidden', color: themeTokens.text, boxShadow: themeTokens.shadow
       }}>
-        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
-          <Logo />
+        <div style={{ padding: 16, borderBottom: `1px solid ${themeTokens.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--table-header-bg)' }}>
+          <div style={{ fontWeight: 800 }}>Video Preview</div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button style={primaryGhostBtnStyle} onClick={() => setShowAI(v => !v)} title="Toggle AI annotations">
+              {showAI ? 'Hide AI' : 'Show AI'}
+            </button>
+            <button onClick={onClose} style={primaryGhostBtnStyle} title="Close">Close</button>
+          </div>
         </div>
-        <div className="title" style={{ textAlign: 'center', fontWeight: 900, marginBottom: 6 }}>Create your account</div>
-        <div className="subtitle" style={{ textAlign: 'center', color: 'var(--muted)', marginBottom: 20 }}>
-          Your role determines navigation and permissions.
+        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16, padding: 16 }}>
+          <div
+            ref={playerRef}
+            style={{
+              background: 'var(--bg)', border: `1px solid ${themeTokens.border}`, borderRadius: 12,
+              height: 360, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--muted)', position: 'relative'
+            }}
+          >
+            {error ? (
+              <ErrorState message={error} />
+            ) : (
+              <>
+                <div>[ Placeholder Player {playing ? 'Playing' : 'Paused'} @ {speed}x ]</div>
+                {showAI && (
+                  <div style={{
+                    position: 'absolute', bottom: 12, left: 12, background: 'rgba(30,138,91,0.15)', border: `1px solid ${themeTokens.border}`,
+                    color: themeTokens.text, padding: '6px 8px', borderRadius: 8, fontSize: 12
+                  }}>
+                    AI: Moving (0.92)
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+          <div>
+            <div style={{ fontWeight: 800, marginBottom: 8 }}>Metadata</div>
+            <ul style={{ margin: 0, paddingLeft: 16, color: '#D1D5DB', lineHeight: 1.8 }}>
+              <li>Species: Giant Anteater</li>
+              <li>Behavior: Moving</li>
+              <li>Confidence: 0.92</li>
+              <li>Timestamp: 2025-01-22 14:37:09</li>
+              <li>Source: {process.env.REACT_APP_BACKEND_URL || 'mock://video'}</li>
+            </ul>
+            <div style={{ marginTop: 16, display: 'flex', gap: 8 }}>
+              <button style={primaryBtnStyle} title="Download video (mock)">Download</button>
+              <button style={primaryGhostBtnStyle} title="Open this time in Timeline">Open in Timeline</button>
+              <button style={primaryGhostBtnStyle} onClick={simulateError} title="Simulate error">Sim Error</button>
+            </div>
+          </div>
         </div>
-
-        <label htmlFor="email-reg" style={{ fontWeight: 700, fontSize: 12, color: '#9CA3AF' }}>Email</label>
-        <input id="email-reg" name="email" type="email" placeholder="name@organization.com" style={inputStyle} aria-required="true" />
-
-        <label htmlFor="password-reg" style={{ fontWeight: 700, fontSize: 12, color: '#9CA3AF' }}>Password</label>
-        <input id="password-reg" name="password" type="password" placeholder="Enter your password" style={inputStyle} aria-required="true" />
-
-        <label htmlFor="role-reg" style={{ fontWeight: 700, fontSize: 12, color: '#9CA3AF' }}>Select Role</label>
-        <select id="role-reg" name="role" defaultValue="" aria-label="Select Role" style={{ ...inputStyle, marginTop: 6 }}>
-          <option value="" disabled>Choose your role…</option>
-          <option value="keeper">Animal Keeper</option>
-          <option value="researcher">Researcher</option>
-          <option value="veterinarian">Veterinarian</option>
-          <option value="admin">Admin</option>
-        </select>
-
-        {error ? <ErrorState message={error} /> : null}
-        <button type="submit" style={{ ...primaryBtnStyle, width: '100%', marginTop: 12 }}>Register</button>
-        <div style={{ marginTop: 12, color: '#9CA3AF', fontSize: 12, textAlign: 'center' }}>
-          Already have an account? <Link to="/login">Sign in</Link>
+        <div style={{ padding: 16, borderTop: `1px solid ${themeTokens.border}`, display: 'flex', gap: 8, alignItems: 'center' }}>
+          <button style={controlBtnStyle} title="Previous">⏮</button>
+          <button style={controlBtnStyle} onClick={togglePlay} title={playing ? 'Pause' : 'Play'}>{playing ? '⏸' : '▶️'}</button>
+          <button style={controlBtnStyle} title="Next">⏭</button>
+          <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
+            <button style={primaryGhostBtnStyle} onClick={cycleSpeed} title="Playback speed">{speed}x</button>
+            <button style={primaryGhostBtnStyle} title="Closed captions">CC</button>
+            <button style={primaryGhostBtnStyle} title="High Definition">HD</button>
+          </div>
         </div>
-      </form>
+      </div>
     </div>
   );
 }
+
+/**
+ * Button styles
+ */
+const primaryBtnStyle = {
+  background: themeTokens.gradient,
+  color: 'var(--surface)',
+  fontWeight: 800,
+  border: 'none',
+  borderRadius: 12,
+  padding: '10px 14px',
+  cursor: 'pointer',
+  boxShadow: themeTokens.shadow,
+};
+const primaryGhostBtnStyle = {
+  background: 'transparent',
+  color: themeTokens.text,
+  fontWeight: 800,
+  border: `1px solid ${themeTokens.border}`,
+  borderRadius: 12,
+  padding: '8px 12px',
+  cursor: 'pointer',
+};
+const controlBtnStyle = {
+  background: 'var(--surface)',
+  color: themeTokens.text,
+  fontWeight: 800,
+  border: `1px solid ${themeTokens.border}`,
+  borderRadius: 12,
+  padding: '8px 10px',
+  cursor: 'pointer',
+  boxShadow: themeTokens.shadow,
+};
+
+/**
+ * Pages
+ */
 
 // PUBLIC_INTERFACE
 function LoginPage() {
@@ -263,27 +519,23 @@ function LoginPage() {
   return (
     <div style={{ minHeight: '100vh', background: themeTokens.background, color: themeTokens.text, display: 'grid', placeItems: 'center', padding: 24 }}>
       <form onSubmit={onSubmit} style={{
-        width: 'min(100%, 480px)', background: themeTokens.surface, border: `1px solid ${themeTokens.border}`, borderRadius: 16, padding: 24, boxShadow: themeTokens.shadow
+        width: 'min(100%, 440px)', background: themeTokens.surface, border: `1px solid ${themeTokens.border}`, borderRadius: 16, padding: 24, boxShadow: themeTokens.shadow
       }}>
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
           <Logo />
         </div>
-        <div className="title" style={{ textAlign: 'center', fontWeight: 900, marginBottom: 6 }}>Sign in</div>
+        <div className="title" style={{ textAlign: 'center', fontWeight: 900, marginBottom: 6 }}>Welcome to VizAI</div>
         <div className="subtitle" style={{ textAlign: 'center', color: 'var(--muted)', marginBottom: 20 }}>
-          Your role determines the dashboard view and available features.
+          Sign in with your research account to continue.
         </div>
-
-        <label htmlFor="email" style={{ fontWeight: 700, fontSize: 12, color: '#9CA3AF' }}>Email/Username</label>
-        <input id="email" name="email" type="email" placeholder="name@organization.com" style={inputStyle} aria-required="true" />
-
-        <label htmlFor="password" style={{ fontWeight: 700, fontSize: 12, color: '#9CA3AF' }}>Password</label>
-        <input id="password" name="password" type="password" placeholder="Enter your password" style={inputStyle} aria-required="true" />
-
+        <label style={{ fontWeight: 700, fontSize: 12, color: '#9CA3AF' }}>Email</label>
+        <input name="email" type="email" placeholder="name@research.org" style={inputStyle} />
+        <label style={{ fontWeight: 700, fontSize: 12, color: '#9CA3AF' }}>Password</label>
+        <input name="password" type="password" placeholder="••••••••" style={inputStyle} />
         {error ? <ErrorState message={error} /> : null}
-        <button type="submit" style={{ ...primaryBtnStyle, width: '100%', marginTop: 12 }}>Login</button>
-
+        <button type="submit" style={{ ...primaryBtnStyle, width: '100%', marginTop: 12 }}>Sign In</button>
         <div style={{ marginTop: 12, color: '#9CA3AF', fontSize: 12, textAlign: 'center' }}>
-          New user? <Link to="/register">Create an account</Link>
+          By continuing you agree to our research-friendly terms.
         </div>
       </form>
     </div>
@@ -308,6 +560,7 @@ function AnimalSelectPage() {
       <div style={{ display: 'grid', gap: 16 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div style={{ fontWeight: 900, fontSize: 20 }}>Select Animal</div>
+          <button style={primaryGhostBtnStyle} title="Quick Access">Quick Access</button>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px,1fr))', gap: 16 }}>
           <Card title="Giant Anteater" description="Myrmecophaga tridactyla" active />
@@ -345,161 +598,301 @@ function Card({ title, description, active, disabled }) {
   );
 }
 
-/**
- * PUBLIC_INTERFACE
- * DashboardPage: simple behavior cards and a button to open a placeholder video modal.
- */
+// PUBLIC_INTERFACE
 function DashboardPage() {
-  // mock metrics aligned with current theme/wording
   const [openVideo, setOpenVideo] = useState(false);
-  const [durationView, setDurationView] = useState('Pie'); // 'Count' | 'Duration' | 'Pie'
 
-  // mock data used across cards
-  const behaviors = [
-    { name: 'Recumbent', count: 22, minutes: 240, color: '#10B981' },
-    { name: 'Non-Recumbent', count: 17, minutes: 160, color: '#60A5FA' },
-    { name: 'Scratching', count: 15, minutes: 45, color: '#F59E0B' },
-    { name: 'Self-Directed', count: 10, minutes: 30, color: '#EC4899' },
-    { name: 'Pacing', count: 9, minutes: 25, color: '#8B5CF6' },
-    { name: 'Moving', count: 5, minutes: 18, color: '#34D399' },
+  // New behavior taxonomy used across the app
+  const BEHAVIOR_CATEGORIES = [
+    'Recumbent',
+    'Non-Recumbent',
+    'Scratching',
+    'Self-Directed',
+    'Pacing',
+    'Moving',
   ];
-  const totals = {
-    events: behaviors.reduce((a, b) => a + b.count, 0),
-    minutes: behaviors.reduce((a, b) => a + b.minutes, 0),
-    unique: behaviors.length,
+
+  // Mock dataset replacements to include all six categories
+  const [durationMode, setDurationMode] = useState('duration'); // count|duration
+  const [pieMode, setPieMode] = useState(true); // stacked/pie toggle (mocked)
+
+  // Mock counts for Behavior Count chart (kept functional but taxonomy-aligned)
+  const mockCounts = {
+    'Recumbent': 22,
+    'Non-Recumbent': 15,
+    'Scratching': 7,
+    'Self-Directed': 10,
+    'Pacing': 5,
+    'Moving': 19,
+  };
+  const totalCount = BEHAVIOR_CATEGORIES.reduce((sum, k) => sum + (mockCounts[k] || 0), 0);
+
+  // Mock durations (minutes) for Behavior Duration chart
+  const mockDurations = {
+    'Recumbent': 485,       // 8h05m
+    'Non-Recumbent': 210,   // 3h30m
+    'Scratching': 35,       // 0h35m
+    'Self-Directed': 65,    // 1h05m
+    'Pacing': 40,           // 0h40m
+    'Moving': 205,          // 3h25m
   };
 
-  // helpers
-  const maxCount = Math.max(...behaviors.map(b => b.count));
-  const barPct = (n) => Math.max(6, Math.round((n / maxCount) * 100)); // min 6% for visibility
+  // Total minutes in the mocked "day"
+  const totalDuration = BEHAVIOR_CATEGORIES.reduce((sum, k) => sum + (mockDurations[k] || 0), 0);
+
+  // Helper for tooltip formatting "Name: 8h 45m (34% of day)"
+  const fmtTooltip = (name) => {
+    const mins = mockDurations[name] || 0;
+    const hh = Math.floor(mins / 60);
+    const mm = mins % 60;
+    const pct = totalDuration > 0 ? Math.round((mins / totalDuration) * 100) : 0;
+    return `${name}: ${hh}h ${String(mm).padStart(2, '0')}m (${pct}% of day)`;
+  };
+
+  // Additional helpers for new chart views
+
+  // PUBLIC_INTERFACE
+  function formatHhMm(mins) {
+    /** Returns "Hh MMm" per spec for tooltips and labels */
+    const h = Math.floor((mins || 0) / 60);
+    const m = (mins || 0) % 60;
+    return `${h}h ${String(m).padStart(2, '0')}m`;
+  }
+
+  // Color palettes using theme variables for accessible contrast
+  const piePalette = [
+    themeTokens.primary,
+    themeTokens.secondary,
+    '#0EA5E9', // sky-500 tint for variation
+    '#22C55E', // green-500
+    '#F43F5E', // rose-500
+    themeTokens.primary600,
+  ];
+  const barPalette = [
+    themeTokens.primary,
+    themeTokens.secondary,
+    '#10B981', // emerald-500
+    '#6366F1', // indigo-500
+    '#F59E0B', // amber-500
+    themeTokens.primary600,
+  ];
+
+  function pieColor(i) {
+    return piePalette[i % piePalette.length];
+  }
+  function barColor(i) {
+    return barPalette[i % barPalette.length];
+  }
+
+  // Build a CSS conic-gradient string from data proportions for the pie
+  // Example output: 'conic-gradient(color1 0 20%, color2 20% 45%, ...)'
+  function conicGradientFromData(keys, dataMap, total) {
+    let acc = 0;
+    const parts = [];
+    keys.forEach((k, idx) => {
+      const mins = dataMap[k] || 0;
+      const frac = total ? mins / total : 0;
+      const start = acc * 100;
+      const end = (acc + frac) * 100;
+      const color = pieColor(idx);
+      parts.push(`${color} ${start}% ${end}%`);
+      acc += frac;
+    });
+    // Fallback to primary color when no data
+    return parts.length ? `conic-gradient(${parts.join(', ')})` : themeTokens.primary;
+  }
 
   return (
     <AuthedLayout>
       <div style={{ display: 'grid', gap: 16 }}>
-        {/* Summary stats row */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(180px,1fr))', gap: 12 }}>
-          <SummaryStat label="Total Events" value={totals.events} />
-          <SummaryStat label="Total Minutes" value={totals.minutes} />
-          <SummaryStat label="Unique Behaviors" value={totals.unique} />
-          <SummaryStat label="Confidence (avg)" value="88%" />
-        </div>
-
-        {/* Primary 3-column section */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(280px,1fr))', gap: 16 }}>
-          {/* Behavior Count card with updated copy */}
-          <div className="card" style={{ borderRadius: 16, padding: 16 }}>
-            <div style={{ fontWeight: 800, marginBottom: 4 }}>Behavior Count – Quick view of occurrences for selected period.</div>
-            <div className="muted" style={{ fontSize: 12, marginBottom: 8 }}>
-              Identify abnormal spikes quickly.
-            </div>
-            <div style={{ display: 'grid', gap: 8 }}>
-              {behaviors.map((b) => (
-                <div key={b.name} style={{ display: 'grid', gap: 6 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--muted)' }}>
-                    <span>{b.name}</span>
-                    <span>{b.count}</span>
-                  </div>
-                  <div style={{ height: 10, background: 'var(--table-row-hover)', border: `1px solid ${themeTokens.border}`, borderRadius: 999, overflow: 'hidden' }}>
-                    <div style={{ width: `${barPct(b.count)}%`, background: themeTokens.gradient, height: '100%' }} />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Behavior Duration Analysis card with tabs and Pie mock */}
-          <div className="card" style={{ borderRadius: 16, padding: 16 }}>
-            <div style={{ fontWeight: 800, marginBottom: 4 }}>Behavior Duration Analysis – Time spent in each behavior.</div>
-
-            {/* tabs */}
-            <div role="tablist" aria-label="Behavior Duration Views" style={{ display: 'flex', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
-              {['Count', 'Duration', 'Pie'].map(tab => {
-                const active = durationView === tab;
-                return (
-                  <button
-                    key={tab}
-                    role="tab"
-                    aria-selected={active}
-                    onClick={() => setDurationView(tab)}
-                    className={active ? 'tab active' : 'tab'}
-                    style={{ border: '1px solid', borderColor: active ? 'rgba(30,138,91,0.35)' : 'transparent' }}
-                  >
-                    {tab}
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* stacked/summary subtitle */}
-            <div className="muted" style={{ fontSize: 12, marginBottom: 10 }}>
-              View time spent in each behavior as a {durationView === 'Pie' ? 'Pie chart' : 'stacked bar'}.
-            </div>
-
-            {/* content area */}
-            {durationView === 'Pie' ? (
-              <div>
-                <div style={{ fontWeight: 700, marginBottom: 6 }}>Behavior Duration – Pie View</div>
-                {/* Legend */}
-                <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 10 }}>
-                  {behaviors.map(b => (
-                    <div key={`legend-${b.name}`} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                      <span aria-hidden="true" style={{ width: 10, height: 10, borderRadius: 999, background: b.color, border: `1px solid ${themeTokens.border}` }} />
-                      <span className="muted" style={{ fontSize: 12 }}>{b.name}</span>
-                    </div>
-                  ))}
-                </div>
-                {/* Pie mock (accessible) */}
-                <div aria-label="Pie chart placeholder" role="img"
-                  style={{
-                    width: '100%',
-                    maxWidth: 320,
-                    aspectRatio: '1 / 1',
-                    marginInline: 'auto',
-                    borderRadius: '50%',
-                    background: `conic-gradient(
-                      ${behaviors.map((b, i, arr) => {
-                        const total = totals.minutes || 1;
-                        const angle = Math.round((b.minutes / total) * 360);
-                        const start = arr.slice(0, i).reduce((s, x) => s + Math.round((x.minutes / total) * 360), 0);
-                        return `${b.color} ${start}deg ${start + angle}deg`;
-                      }).join(',')}
-                    )`,
-                    border: `1px solid ${themeTokens.border}`,
-                    boxShadow: themeTokens.shadow
-                  }}
-                />
-              </div>
+          <ChartBlock title="Behavior Count">
+            {totalCount === 0 ? (
+              <EmptyState title="No behaviors found" description="Try expanding your date range." />
             ) : (
-              <div>
-                <div style={{ fontWeight: 700, marginBottom: 6 }}>
-                  {durationView === 'Count' ? 'Behavior Count – Stacked Bar' : 'Behavior Duration – Stacked Bar'}
-                </div>
-                <div style={{ display: 'grid', gap: 8 }}>
-                  {behaviors.map(b => {
-                    const num = durationView === 'Count' ? b.count : b.minutes;
-                    const denom = Math.max(...behaviors.map(x => durationView === 'Count' ? x.count : x.minutes));
-                    const pct = Math.max(6, Math.round((num / denom) * 100));
-                    return (
-                      <div key={`stack-${b.name}`} style={{ display: 'grid', gap: 6 }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--muted)' }}>
-                          <span>{b.name}</span>
-                          <span>{num}{durationView === 'Duration' ? ' min' : ''}</span>
-                        </div>
-                        <div style={{ height: 10, background: 'var(--table-row-hover)', border: `1px solid ${themeTokens.border}`, borderRadius: 999, overflow: 'hidden' }}>
-                          <div style={{ width: `${pct}%`, background: b.color, height: '100%' }} />
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
+              <div style={{ display: 'grid', gap: 8 }}>
+                {BEHAVIOR_CATEGORIES.map(b => (
+                  <div key={b} style={{ display: 'grid', gap: 6 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--muted)' }}>
+                      <span>{b}</span>
+                      <span>{mockCounts[b] ?? 0}</span>
+                    </div>
+                    <div style={{
+                      height: 10, background: 'var(--table-row-hover)', border: `1px solid ${themeTokens.border}`, borderRadius: 999, overflow: 'hidden'
+                    }}>
+                      <div style={{
+                        width: `${((mockCounts[b] ?? 0) / Math.max(1, totalCount)) * 100}%`,
+                        background: themeTokens.gradient, height: '100%'
+                      }} />
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
-          </div>
+          </ChartBlock>
 
-          {/* Daily Activity Pattern stays as before */}
-          <div className="card" style={{ borderRadius: 16, padding: 16 }}>
-            <div style={{ fontWeight: 800, marginBottom: 4 }}>Daily Activity Pattern</div>
-            <div className="muted" style={{ fontSize: 12, marginBottom: 8 }}>Visualize activity intensity across 24 hours.</div>
+          {/* Behavior Duration section with new taxonomy */}
+          <ChartBlock title="Behavior Duration">
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, gap: 8, alignItems: 'center' }}>
+              <div style={{ color: 'var(--muted)', fontSize: 12 }}>View</div>
+              <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+                {/* Toggle labels per spec: Count, Duration, Pie, Stacked Bar */}
+                <button
+                  style={{ ...primaryGhostBtnStyle, background: durationMode === 'count' ? 'rgba(30,138,91,0.12)' : 'transparent' }}
+                  onClick={() => setDurationMode('count')}
+                  title="Show by count"
+                >
+                  Count
+                </button>
+                <button
+                  style={{ ...primaryGhostBtnStyle, background: durationMode === 'duration' ? 'rgba(245,158,11,0.12)' : 'transparent' }}
+                  onClick={() => setDurationMode('duration')}
+                  title="Show by duration"
+                >
+                  Duration
+                </button>
+                <button
+                  style={{ ...primaryGhostBtnStyle, background: pieMode ? 'rgba(59,130,246,0.12)' : 'transparent' }}
+                  onClick={() => setPieMode(true)}
+                  title="Pie chart view"
+                >
+                  Pie
+                </button>
+                <button
+                  style={{ ...primaryGhostBtnStyle, background: !pieMode ? 'rgba(59,130,246,0.12)' : 'transparent' }}
+                  onClick={() => setPieMode(false)}
+                  title="Stacked bar view"
+                >
+                  Stacked Bar
+                </button>
+              </div>
+            </div>
+            {/* Helper text near toggles */}
+            <div style={{ color: 'var(--muted)', fontSize: 12, marginBottom: 8 }}>
+              Switch between Pie and Stacked Bar to visualize behavior duration as percentages or cumulative time.
+            </div>
+
+            {durationMode === 'count' ? (
+              <EmptyState title="Count mode" description="Showing distribution by event count (mocked)." />
+            ) : totalDuration === 0 ? (
+              <EmptyState title="No behavior duration data available for this period." description="" />
+            ) : (
+              <>
+                {/* Titles per view */}
+                <div style={{ fontWeight: 800, marginBottom: 6 }}>
+                  {pieMode ? 'Behavior Duration – Pie View' : 'Behavior Duration – Stacked Bar View'}
+                </div>
+
+                {pieMode ? (
+                  /* Pie View (mocked, accessible, using CSS with theme vars) */
+                  <div role="img" aria-label="Pie chart of behavior duration percentages"
+                       style={{ display: 'grid', gap: 8 }}>
+                    {/* Legend */}
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                      {BEHAVIOR_CATEGORIES.map((b, idx) => {
+                        const mins = mockDurations[b] || 0;
+                        const pct = totalDuration ? Math.round((mins / totalDuration) * 100) : 0;
+                        const color = pieColor(idx);
+                        return (
+                          <div key={b} title={`${b}: ${formatHhMm(mins)} (${pct}%)`}
+                               style={{ display: 'inline-flex', alignItems: 'center', gap: 6, border: `1px solid ${themeTokens.border}`, padding: '6px 8px', borderRadius: 10, background: 'var(--surface)' }}>
+                            <span aria-hidden style={{ width: 10, height: 10, borderRadius: 999, background: color, boxShadow: themeTokens.shadow }} />
+                            <span style={{ fontSize: 12, color: themeTokens.text }}>{b}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Simple "pie" representation using a conic gradient */}
+                    <div
+                      style={{
+                        width: 240,
+                        height: 240,
+                        borderRadius: '50%',
+                        border: `1px solid ${themeTokens.border}`,
+                        boxShadow: themeTokens.shadow,
+                        background: conicGradientFromData(BEHAVIOR_CATEGORIES, mockDurations, totalDuration),
+                        margin: '8px auto'
+                      }}
+                      title="Pie chart"
+                    />
+
+                    {/* Accessible textual breakdown with tooltips exactly formatted */}
+                    <div style={{ display: 'grid', gap: 4 }}>
+                      {BEHAVIOR_CATEGORIES.map((b) => {
+                        const mins = mockDurations[b] || 0;
+                        const pct = totalDuration ? Math.round((mins / totalDuration) * 100) : 0;
+                        return (
+                          <div key={b} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#6B7280' }}>
+                            <span>{b}</span>
+                            <span title={`${b}: ${formatHhMm(mins)} (${pct}%)`}>{`${formatHhMm(mins)} (${pct}%)`}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Helper text */}
+                    <div style={{ color: 'var(--muted)', fontSize: 12, marginTop: 4 }}>
+                      Pie chart shows percentage of total time spent in each behavior.
+                    </div>
+                  </div>
+                ) : (
+                  /* Stacked Bar View */
+                  <div role="img" aria-label="Stacked bar chart of behavior duration in hours"
+                       style={{ display: 'grid', gap: 8 }}>
+                    {/* Axes labels */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--muted)' }}>
+                      <span>Behaviors</span>
+                      <span>Time (Hours)</span>
+                    </div>
+
+                    {/* One horizontal stacked bar representing cumulative distribution */}
+                    <div style={{
+                      height: 20,
+                      background: 'var(--table-row-hover)',
+                      border: `1px solid ${themeTokens.border}`,
+                      borderRadius: 999,
+                      overflow: 'hidden',
+                      display: 'flex'
+                    }}
+                      title="Cumulative time distribution across behaviors"
+                    >
+                      {BEHAVIOR_CATEGORIES.map((b, idx) => {
+                        const mins = mockDurations[b] || 0;
+                        const widthPct = totalDuration ? (mins / totalDuration) * 100 : 0;
+                        const color = barColor(idx);
+                        return (
+                          <div
+                            key={b}
+                            style={{ width: `${widthPct}%`, background: color }}
+                            title={`${b}: ${formatHhMm(mins)}`}
+                            aria-label={`${b}: ${formatHhMm(mins)}`}
+                          />
+                        );
+                      })}
+                    </div>
+
+                    {/* Legend with exact labels */}
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                      {BEHAVIOR_CATEGORIES.map((b, idx) => (
+                        <div key={b} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, border: `1px solid ${themeTokens.border}`, padding: '6px 8px', borderRadius: 10, background: 'var(--surface)' }}>
+                          <span aria-hidden style={{ width: 10, height: 10, borderRadius: 2, background: barColor(idx), boxShadow: themeTokens.shadow }} />
+                          <span style={{ fontSize: 12, color: themeTokens.text }}>{b}</span>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Helper text */}
+                    <div style={{ color: 'var(--muted)', fontSize: 12 }}>
+                      Stacked bar chart shows cumulative time distribution across behaviors.
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+          </ChartBlock>
+
+          <ChartBlock title="Daily Activity Pattern">
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6,1fr)', gap: 6 }}>
               {Array.from({ length: 18 }).map((_, i) => (
                 <div key={i} title="mock heat"
@@ -512,198 +905,103 @@ function DashboardPage() {
                 />
               ))}
             </div>
-          </div>
+          </ChartBlock>
         </div>
-
-        {/* Quick Actions row (restored) */}
-        <div className="card" style={{ borderRadius: 16, padding: 12 }}>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center', justifyContent: 'space-between' }}>
-            <div style={{ fontWeight: 800 }}>Quick Actions</div>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              <Link to="/timeline" className="btn" style={{ textDecoration: 'none' }}>Open Timeline</Link>
-              <Link to="/reports" className="btn-outline" style={{ textDecoration: 'none' }}>Build Report</Link>
-              <button className="btn-outline" onClick={() => setOpenVideo(true)}>Preview Video</button>
-            </div>
-          </div>
+        <div>
+          <button style={primaryBtnStyle} onClick={() => setOpenVideo(true)}>Open Video Modal</button>
         </div>
       </div>
-
-      {/* video modal unchanged */}
-      {openVideo && (
-        <div role="dialog" aria-modal="true" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, zIndex: 50 }}>
-          <div className="card" style={{ width: 'min(100%, 720px)', padding: 16 }}>
-            <div style={{ fontWeight: 900, marginBottom: 8 }}>Behavior Video – Preview</div>
-            <div style={{ height: 360, background: 'var(--table-row-hover)', border: `1px solid ${themeTokens.border}`, borderRadius: 12, display: 'grid', placeItems: 'center', color: 'var(--muted)' }}>
-              [ Placeholder Player ]
-            </div>
-            <div style={{ marginTop: 12, display: 'flex', justifyContent: 'flex-end' }}>
-              <button style={primaryGhostBtnStyle} onClick={() => setOpenVideo(false)}>Close</button>
-            </div>
-          </div>
-        </div>
-      )}
+      <VideoModal open={openVideo} onClose={() => setOpenVideo(false)} />
     </AuthedLayout>
+  );
+}
+
+function ChartBlock({ title, children }) {
+  return (
+    <div className="card" style={{
+      borderRadius: 16, padding: 16
+    }}>
+      <div style={{ fontWeight: 800, marginBottom: 8 }}>{title}</div>
+      <div>{children}</div>
+    </div>
   );
 }
 
 // PUBLIC_INTERFACE
 function TimelinePage() {
-  // simple mock, no unified filters, no range/export additions
-  const items = [
-    { type: 'Resting', start: '14:12', end: '14:28', durationMin: 16, camera: 'Camera 1', confidence: 0.88 },
-    { type: 'Feeding', start: '14:31', end: '14:33', durationMin: 2, camera: 'Camera 1', confidence: 0.81 },
-    { type: 'Moving', start: '15:03', end: '15:12', durationMin: 9, camera: 'Camera 1', confidence: 0.92 },
+  const [view, setView] = useState('grid');
+  const [zoom, setZoom] = useState(100);
+  const [count] = useState(12);
+  const [openVideo, setOpenVideo] = useState(false);
+  return (
+    <AuthedLayout>
+      <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: 16 }}>
+        <FiltersPanel />
+        <div style={{ display: 'grid', gap: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ color: '#9CA3AF' }}>{count} results</div>
+            <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, alignItems: 'center' }}>
+              <button style={controlBtnStyle} onClick={() => setZoom(z => Math.max(25, z - 25))} title="Zoom out">-</button>
+              <div style={{ minWidth: 48, textAlign: 'center' }}>{zoom}%</div>
+              <button style={controlBtnStyle} onClick={() => setZoom(z => Math.min(200, z + 25))} title="Zoom in">+</button>
+              <button style={{ ...primaryGhostBtnStyle, background: view === 'grid' ? 'rgba(52,211,153,0.12)' : 'transparent' }} onClick={() => setView('grid')}>Grid</button>
+              <button style={{ ...primaryGhostBtnStyle, background: view === 'list' ? 'rgba(52,211,153,0.12)' : 'transparent' }} onClick={() => setView('list')}>List</button>
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: view === 'grid' ? 'repeat(auto-fill, minmax(240px,1fr))' : '1fr', gap: 12 }}>
+            {Array.from({ length: count }).map((_, i) => (
+              <BehaviorEventCard key={i} onOpenVideo={() => setOpenVideo(true)} />
+            ))}
+          </div>
+        </div>
+      </div>
+      <VideoModal open={openVideo} onClose={() => setOpenVideo(false)} />
+    </AuthedLayout>
+  );
+}
+
+function FiltersPanel() {
+  // Consistent behavior set for Timeline filters
+  const BEHAVIOR_CATEGORIES = [
+    'Recumbent',
+    'Non-Recumbent',
+    'Scratching',
+    'Self-Directed',
+    'Pacing',
+    'Moving',
   ];
   return (
-    <AuthedLayout>
-      <div className="card" style={{ borderRadius: 16, padding: 12 }}>
-        <div style={{ fontWeight: 800, marginBottom: 8 }}>Behavior Events</div>
-        <div className="muted" style={{ fontSize: 12, marginBottom: 8 }}>
-          Click Preview to watch the exact video segment for this behavior.
+    <div className="card" style={{
+      borderRadius: 16, padding: 16, height: 'fit-content'
+    }}>
+      <div style={{ fontWeight: 800, marginBottom: 10 }}>Filters</div>
+      <div style={{ display: 'grid', gap: 10 }}>
+        <div>
+          <label style={filterLabel}>Behavior Type</label>
+          <select style={selectStyle} aria-label="Behavior Type">
+            <option>All</option>
+            {BEHAVIOR_CATEGORIES.map(c => (
+              <option key={c}>{c}</option>
+            ))}
+          </select>
         </div>
-        <div style={{ overflowX: 'auto' }}>
-          <table role="table" aria-label="Behavior Events" style={{ width: '100%', borderCollapse: 'separate', borderSpacing: 0 }}>
-            <thead>
-              <tr>
-                <th style={thStyle}>Type</th>
-                <th style={thStyle}>Start</th>
-                <th style={thStyle}>End</th>
-                <th style={thStyle}>Duration (min)</th>
-                <th style={thStyle}>Confidence</th>
-                <th style={thStyle}>Camera</th>
-              </tr>
-            </thead>
-            <tbody>
-              {items.map((b, idx) => (
-                <tr key={`row-${idx}`} style={{ borderBottom: `1px solid ${themeTokens.border}` }}>
-                  <td style={tdStyle}>{b.type}</td>
-                  <td style={tdStyle}>{b.start}</td>
-                  <td style={tdStyle}>{b.end}</td>
-                  <td style={tdStyle}>{b.durationMin}</td>
-                  <td style={tdStyle}>{Math.round(b.confidence * 100)}%</td>
-                  <td style={tdStyle}>{b.camera}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div>
+          <label style={filterLabel}>Confidence</label>
+          <input type="range" min="0" max="100" defaultValue="80" style={{ width: '100%' }} />
+        </div>
+        <div>
+          <label style={filterLabel}>Video Only</label>
+          <input type="checkbox" />
+        </div>
+        <div>
+          <label style={filterLabel}>Annotations</label>
+          <input type="checkbox" defaultChecked />
         </div>
       </div>
-    </AuthedLayout>
+    </div>
   );
 }
-const thStyle = {
-  textAlign: 'left',
-  padding: '10px 12px',
-  borderBottom: `1px solid ${themeTokens.border}`,
-  color: themeTokens.text,
-};
-const tdStyle = {
-  padding: '10px 12px',
-  color: themeTokens.text,
-  borderBottom: `1px solid ${themeTokens.border}`,
-  fontSize: 14,
-};
-
-// PUBLIC_INTERFACE
-function ReportsPage() {
-  // revert to basic builder without scheduling/templates and simple preview
-  const [type, setType] = useState('Behavior Duration Analysis');
-  const [dateRange, setDateRange] = useState('Last 7 Days');
-  const [behavior, setBehavior] = useState('All');
-  const [hours, setHours] = useState(24);
-
-  const BEHAVIORS = ['All', 'Resting', 'Feeding', 'Moving'];
-
-  const helper = 'Use Behavior, Date Range, and Hours to refine the report. Use the buttons to export current view (mock).';
-
-  const downloadMock = (kind) => {
-    const content = `VizAI Report (${kind})
-Type: ${type}
-Behavior: ${behavior}
-Date Range: ${dateRange}
-Hours: ${hours}
-Generated: ${new Date().toISOString()}
-`;
-    const blob = new Blob([content], { type: kind === 'PDF' ? 'application/pdf' : 'application/vnd.ms-excel' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `vizai-report-${Date.now()}.${kind === 'PDF' ? 'pdf' : 'xlsx'}`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
-  };
-
-  return (
-    <AuthedLayout>
-      <div style={{ display: 'grid', gap: 8, marginBottom: 8 }}>
-        <div style={{ fontWeight: 900, fontSize: 18 }}>
-          Reports – Generate summaries, trends, and welfare assessments.
-        </div>
-        <div className="muted" style={{ fontSize: 12 }}>
-          {helper}
-        </div>
-      </div>
-      <div style={{ display: 'grid', gridTemplateColumns: '360px 1fr', gap: 16 }}>
-        <div className="card" style={{ borderRadius: 16, padding: 16 }}>
-          <div style={{ fontWeight: 800, marginBottom: 10 }}>Report Builder</div>
-          <div style={{ display: 'grid', gap: 10 }}>
-            <div>
-              <label style={filterLabel}>Type</label>
-              <select value={type} onChange={(e) => setType(e.target.value)} style={selectStyle}>
-                <option>Behavior Duration Analysis</option>
-                <option>Summary</option>
-                <option>Daily Pattern</option>
-              </select>
-            </div>
-            <div>
-              <label style={filterLabel}>Behavior</label>
-              <select value={behavior} onChange={(e) => setBehavior(e.target.value)} style={selectStyle}>
-                {BEHAVIORS.map(b => <option key={b} value={b}>{b}</option>)}
-              </select>
-            </div>
-            <div>
-              <label style={filterLabel}>Date Range</label>
-              <select value={dateRange} onChange={(e) => setDateRange(e.target.value)} style={selectStyle}>
-                <option>Today</option>
-                <option>Last 7 Days</option>
-                <option>Last 30 Days</option>
-                <option>Custom…</option>
-              </select>
-            </div>
-            <div>
-              <label style={filterLabel}>Hours</label>
-              <input
-                type="number"
-                min={1}
-                max={720}
-                value={hours}
-                onChange={(e) => setHours(Number(e.target.value || 0))}
-                style={{ ...selectStyle, appearance: 'textfield' }}
-                aria-label="Hours"
-              />
-            </div>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              <button type="button" style={primaryBtnStyle} onClick={() => downloadMock('PDF')}>Download PDF</button>
-              <button type="button" style={primaryGhostBtnStyle} onClick={() => downloadMock('Excel')}>Download Excel</button>
-            </div>
-          </div>
-        </div>
-        <div className="card" style={{ borderRadius: 16, padding: 16 }}>
-          <div style={{ fontWeight: 800, marginBottom: 10 }}>
-            Preview {type === 'Behavior Duration Analysis' ? '• Behavior Duration Analysis' : ''}
-          </div>
-          <EmptyState
-            title={type === 'Behavior Duration Analysis' ? 'No behavior duration data available for this period.' : 'Report Preview'}
-            description={type === 'Behavior Duration Analysis' ? '' : `Type: ${type} • Behavior: ${behavior} • Range: ${dateRange} • Hours: ${hours}`}
-          />
-        </div>
-      </div>
-    </AuthedLayout>
-  );
-}
-
 const filterLabel = { fontSize: 12, color: 'var(--muted)', fontWeight: 700 };
 const selectStyle = {
   width: '100%',
@@ -716,27 +1014,203 @@ const selectStyle = {
   boxShadow: themeTokens.shadow,
 };
 
-// PUBLIC_INTERFACE
-function SummaryStat({ label, value }) {
-  /** A compact stat card used on the Dashboard summary row. */
+function BehaviorEventCard({ onOpenVideo }) {
   return (
-    <div className="card" style={{ padding: 12, borderRadius: 16 }}>
-      <div className="muted" style={{ fontSize: 12, marginBottom: 4, fontWeight: 700 }}>{label}</div>
-      <div style={{ fontWeight: 900, fontSize: 20 }}>{value}</div>
+    <div className="card" style={{
+      borderRadius: 14,
+      overflow: 'hidden'
+    }}>
+      <div style={{ height: 120, background: 'var(--table-row-hover)', display: 'grid', placeItems: 'center', color: 'var(--muted)' }}>
+        [ Thumbnail ]
+      </div>
+      <div style={{ padding: 12, display: 'grid', gap: 6 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          {/* Keep badge visual; label can be generic to avoid implying taxonomy mismatch */}
+          <StatusBadge status="Active" />
+          <span style={{ color: 'var(--muted)', fontSize: 12 }}>14:37:09</span>
+        </div>
+        <div style={{ color: '#D1D5DB' }}>Behavior: Moving • Confidence: 0.92</div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button style={primaryGhostBtnStyle} onClick={onOpenVideo}>View Video</button>
+          <button style={primaryGhostBtnStyle} title="Open details">Open</button>
+        </div>
+      </div>
     </div>
   );
 }
 
+// PUBLIC_INTERFACE
+function ReportsPage() {
+  const [type, setType] = useState('Behavior Duration Analysis');
+  const [dateRange, setDateRange] = useState('Last 7 Days');
+  const [openExport, setOpenExport] = useState(false);
+
+  const isBehaviorDuration = type === 'Behavior Duration Analysis';
+
+  return (
+    <AuthedLayout>
+      <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: 16 }}>
+        <div className="card" style={{ borderRadius: 16, padding: 16 }}>
+          <div style={{ fontWeight: 800, marginBottom: 10 }}>Report Builder</div>
+          <div style={{ display: 'grid', gap: 10 }}>
+            <div>
+              <label style={filterLabel}>Type</label>
+              <select value={type} onChange={(e) => setType(e.target.value)} style={selectStyle}>
+                <option>Behavior Duration Analysis</option>
+                <option>Summary</option>
+                <option>Daily Pattern</option>
+              </select>
+            </div>
+            <div style={{ color: 'var(--muted)', fontSize: 12 }}>
+              {isBehaviorDuration
+                ? 'Shows total time spent in each behavior across selected date range.'
+                : 'Choose a report type to see its description.'}
+            </div>
+            <div>
+              <label style={filterLabel}>Date Range</label>
+              <select value={dateRange} onChange={(e) => setDateRange(e.target.value)} style={selectStyle}>
+                <option>Today</option>
+                <option>Last 7 Days</option>
+                <option>Last 30 Days</option>
+                <option>Custom…</option>
+              </select>
+            </div>
+            <div>
+              <label style={filterLabel}>Parameters</label>
+              <div style={{ display: 'grid', gap: 6 }}>
+                <label style={{ color: '#D1D5DB', fontSize: 14 }}><input type="checkbox" defaultChecked /> Include charts</label>
+                <label style={{ color: '#D1D5DB', fontSize: 14 }}><input type="checkbox" /> Include raw data</label>
+                <label style={{ color: '#D1D5DB', fontSize: 14 }}><input type="checkbox" defaultChecked /> Async email export</label>
+              </div>
+            </div>
+            <button style={primaryBtnStyle} onClick={() => setOpenExport(true)}>Export</button>
+            <div style={{ color: '#9CA3AF', fontSize: 12 }}>
+              Exports may take a few minutes. You can continue exploring while we generate your report.
+            </div>
+          </div>
+        </div>
+        <div className="card" style={{ borderRadius: 16, padding: 16 }}>
+          <div style={{ fontWeight: 800, marginBottom: 10 }}>
+            Preview {isBehaviorDuration ? '• Behavior Duration Analysis' : ''}
+          </div>
+          <EmptyState
+            title={isBehaviorDuration ? 'No behavior duration data available for this period.' : 'Report Preview'}
+            description={isBehaviorDuration ? '' : 'Preview placeholder for selected type and parameters.'}
+          />
+        </div>
+      </div>
+      {openExport && (
+        <div role="dialog" aria-modal="true" style={{
+          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'grid', placeItems: 'center', zIndex: 60
+        }}>
+          <div className="card" style={{ width: 420, padding: 16 }}>
+            <div style={{ fontWeight: 900, marginBottom: 10 }}>Export Report</div>
+            <div style={{ color: '#D1D5DB', marginBottom: 16 }}>
+              Your report "{type}" for {dateRange} is being generated. We will notify you when it’s ready.
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+              <button style={primaryGhostBtnStyle} onClick={() => setOpenExport(false)}>Close</button>
+              <button style={primaryBtnStyle} onClick={() => setOpenExport(false)}>Okay</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </AuthedLayout>
+  );
+}
+
+// PUBLIC_INTERFACE
+function AlertsPage() {
+  return (
+    <AuthedLayout>
+      <div className="card" style={{
+        padding: 16, display: 'grid', gap: 12
+      }}>
+        <div style={{ fontWeight: 900 }}>Alerts</div>
+        <div style={{
+          border: `1px solid ${themeTokens.border}`, borderRadius: 12, padding: 12, display: 'flex', gap: 12, alignItems: 'center'
+        }}>
+          <span style={{ width: 10, height: 10, borderRadius: 999, background: themeTokens.secondary, boxShadow: themeTokens.shadow }} />
+          <div style={{ fontWeight: 800 }}>Feeding anomaly detected</div>
+          <div style={{ color: '#9CA3AF', marginLeft: 'auto' }}>2 hours ago</div>
+          <button style={primaryGhostBtnStyle}>View</button>
+        </div>
+      </div>
+    </AuthedLayout>
+  );
+}
+
+// PUBLIC_INTERFACE
+function ChatPage() {
+  const enabled = !!featureFlags.chat || false; // phase-gated
+  return (
+    <AuthedLayout>
+      {!enabled ? (
+        <EmptyState title="AI Chat is coming soon" description="This feature is currently disabled." />
+      ) : (
+        <div style={{ display: 'grid', gridTemplateRows: 'auto 1fr auto', height: 'calc(100vh - 160px)', gap: 12 }}>
+          <div style={{ fontWeight: 900 }}>Welcome to VizAI Chat</div>
+          <div className="card" style={{ borderRadius: 16, padding: 16, overflow: 'auto' }}>
+            <div className="muted" style={{ marginBottom: 12 }}>Suggested:</div>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
+              <button style={primaryGhostBtnStyle}>Show feeding trends</button>
+              <button style={primaryGhostBtnStyle}>Compare active vs resting</button>
+              <button style={primaryGhostBtnStyle}>Explain daily pattern</button>
+            </div>
+            <div style={{ color: 'var(--text)' }}>[ Typing indicator… ]</div>
+            <div style={{ marginTop: 12, background: 'var(--table-row-hover)', border: `1px solid ${themeTokens.border}`, borderRadius: 12, padding: 12 }}>
+              Sample response with chart, text and references (placeholder).
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <input placeholder="Ask about behaviors, trends, anomalies…" style={{ ...inputStyle, margin: 0, flex: 1 }} />
+            <button style={primaryBtnStyle}>Send</button>
+          </div>
+        </div>
+      )}
+    </AuthedLayout>
+  );
+}
+
 /**
- * PUBLIC_INTERFACE
- * Layout wrapper: NavBar + page container. No onboarding wizard, no unified sidebar, no extra tabs.
+ * Layout wrapper for authenticated pages:
+ * includes ConnectionBanner and NavBar
  */
 function AuthedLayout({ children }) {
+  const [connLost, setConnLost] = useState(false);
+  const [dateRange, setDateRange] = useState('Last 7 Days');
+  const [species, setSpecies] = useState('Giant Anteater');
+  const showChat = !!featureFlags.chat;
+  const alertsCount = 1; // mock badge
+
   return (
     <div style={{ minHeight: '100vh', background: themeTokens.background, color: themeTokens.text }}>
-      <NavBar />
+      <ConnectionBanner visible={connLost} />
+      <NavBar
+        dateRange={dateRange}
+        setDateRange={setDateRange}
+        showChatTab={showChat}
+        species={species}
+        setSpecies={setSpecies}
+      />
       <div style={{ padding: 16, maxWidth: 1200, margin: '0 auto' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+          <span title="Project status" style={{ fontSize: 12, color: 'var(--muted)' }}>
+            Environment: {process.env.REACT_APP_NODE_ENV || 'development'} • API: {process.env.REACT_APP_API_BASE || 'mock'}
+          </span>
+          <span style={{ marginLeft: 'auto', fontSize: 12, color: 'var(--muted)' }}>
+            Alerts: <strong style={{ color: themeTokens.secondary }}>{alertsCount}</strong>
+          </span>
+        </div>
         {children}
+        <div style={{ marginTop: 16 }}>
+          <button style={primaryGhostBtnStyle} onClick={() => setConnLost(v => !v)}>
+            Toggle Connection Banner
+          </button>
+          <span style={{ marginLeft: 8, color: 'var(--muted)', fontSize: 12 }}>
+            Research tip: behavior vocabulary is consistent across views.
+          </span>
+        </div>
       </div>
     </div>
   );
@@ -744,7 +1218,7 @@ function AuthedLayout({ children }) {
 
 /**
  * PUBLIC_INTERFACE
- * Route guard for authed sections.
+ * Root App with Router and protected routes
  */
 function ProtectedRoute({ children }) {
   const { authed } = useAuth();
@@ -752,23 +1226,20 @@ function ProtectedRoute({ children }) {
   return children;
 }
 
-/**
- * PUBLIC_INTERFACE
- * App root provider and router.
- */
+// PUBLIC_INTERFACE
 function App() {
   const [authed, setAuthed] = useState(false);
-  const [role, setRole] = useState('researcher');
 
-  useEffect(() => {}, []);
+  useEffect(() => {
+    // Theme is controlled via CSS variables; no explicit attribute required.
+  }, []);
 
-  const authValue = useMemo(() => ({ authed, setAuthed, role, setRole }), [authed, role]);
+  const authValue = useMemo(() => ({ authed, setAuthed }), [authed]);
 
   return (
     <AuthContext.Provider value={authValue}>
       <BrowserRouter>
         <Routes>
-          <Route path="/register" element={<RegistrationPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/select-animal" element={
             <ProtectedRoute>
@@ -790,7 +1261,17 @@ function App() {
               <ReportsPage />
             </ProtectedRoute>
           } />
-          <Route path="/" element={<Navigate to="/register" replace />} />
+          <Route path="/alerts" element={
+            <ProtectedRoute>
+              <AlertsPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/chat" element={
+            <ProtectedRoute>
+              <ChatPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/" element={<Navigate to="/login" replace />} />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </BrowserRouter>

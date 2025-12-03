@@ -1,11 +1,6 @@
 /* Keep a minimal sheet for compatibility and quick helpers (variable-driven) */
 .App { min-height: 100vh; }
 
-/* Optional helper for overlays */
-.z-overlay {
-  z-index: 70;
-}
-
 /* Gradient text using global gradient */
 .gradient-text {
   background: var(--gradient);
@@ -99,18 +94,6 @@
   padding: 12px 16px;
 }
 
-/* Loading skeleton */
-.skeleton {
-  background: linear-gradient(90deg, var(--table-row-hover), #ececec, var(--table-row-hover));
-  background-size: 200% 100%;
-  animation: shimmer 1.2s infinite;
-  border-radius: 8px;
-}
-@keyframes shimmer {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
-}
-
 /* Nav and dropdowns */
 .nav {
   background: var(--surface);
@@ -118,42 +101,18 @@
   box-shadow: var(--shadow);
 }
 
-/* Brand container and logo spacing (text removed) */
-.nav .brand {
-  display: inline-flex !important;
-  align-items: center !important;
-  gap: 0 !important;               /* no gap since only image remains */
-  margin-left: 16px !important;    /* exact 16px from viewport edge */
-  padding: 0 !important;
-  /* Ensure no leftover text node causes spacing */
-  line-height: 0 !important;
-}
-/* Prevent any pseudo-element text from showing near the logo */
-.nav .brand::before,
-.nav .brand::after {
-  content: none !important;
-}
-
-/* Logo sizing: fixed 64x64 square */
+/* Ensure the brand logo image remains visible and sized */
 .nav img[alt="VizAI Logo"] {
-  width: 64px !important;
-  height: 64px !important;
-  max-width: none !important;
-  max-height: none !important;
+  width: var(--brand-icon-size, 32px) !important;
+  height: var(--brand-icon-size, 32px) !important;
   display: inline-block !important;
   object-fit: contain !important;
-  border-radius: 12px !important; /* rounded-square per brand */
-  background: transparent !important;
   opacity: 1 !important;
   visibility: visible !important;
   filter: none !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  transform: none !important;
-  mix-blend-mode: normal !important;
+  max-width: none !important;
+  max-height: none !important;
 }
-
-/* Removed brand text styles */
 
 .dropdown {
   background: var(--surface);

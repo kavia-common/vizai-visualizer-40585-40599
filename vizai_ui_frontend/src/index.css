@@ -26,8 +26,9 @@
   --gradient: linear-gradient(135deg, #1e8a5b 0%, #34d399 100%);
 
   /* Brand area sizing */
-  --brand-icon-size: 32px;       /* default 32px to match reference */
-  --brand-text-size: 24px;       /* brand text size default */
+  --brand-gap: 8px;              /* spacing between logo and text */
+  --brand-icon-size: 32px;       /* required 32x32 icon size */
+  --brand-text-size: 18px;       /* bold single brand text size */
   --nav-padding: 16px;
 }
 

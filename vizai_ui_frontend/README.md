@@ -9,8 +9,7 @@ This project now includes a routed VizAI Phase-1 UI with playful Neon theme and 
 - /dashboard (Behavior Count, Behavior Duration with stacked/pie toggle, Daily Activity Pattern)
 - /timeline (Behavior Explorer with filters, result counter, zoom, list/grid toggle, event cards, View Video)
 - /reports (builder, preview, export modal scaffold and async hint)
-- /alerts (Alert Center with thresholds and actions)
-- /help (Help Center with feedback queue and system status)
+- /alerts (panel with notification badge in nav)
 - /chat (feature gated, disabled by default)
 
 ## Feature flags
