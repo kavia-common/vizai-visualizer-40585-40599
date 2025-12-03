@@ -577,20 +577,29 @@ const controlBtnStyle = {
 
 // PUBLIC_INTERFACE
 function LoginPage() {
-  const { setAuthed } = useAuth();
+  // Bring in role setter so chosen role is reflected across the app after login
+  const { setAuthed, setRole } = useAuth();
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
   const onSubmit = (e) => {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
+    const selectedRole = String(fd.get('role') || '');
     const email = String(fd.get('email') || '');
     const password = String(fd.get('password') || '');
+    // Validate presence of role in addition to email/password
+    if (!selectedRole) {
+      setError('Please select a role.');
+      return;
+    }
     if (!email || !password) {
       setError('Please enter a valid email and password.');
       return;
     }
     setError('');
+    // Update global auth context with chosen role before authenticating
+    setRole(selectedRole);
     setAuthed(true);
     navigate('/select-animal', { replace: true });
   };
@@ -598,21 +607,54 @@ function LoginPage() {
   return (
     <div style={{ minHeight: '100vh', background: themeTokens.background, color: themeTokens.text, display: 'grid', placeItems: 'center', padding: 24 }}>
       <form onSubmit={onSubmit} style={{
-        width: 'min(100%, 440px)', background: themeTokens.surface, border: `1px solid ${themeTokens.border}`, borderRadius: 16, padding: 24, boxShadow: themeTokens.shadow
+        width: 'min(100%, 480px)', background: themeTokens.surface, border: `1px solid ${themeTokens.border}`, borderRadius: 16, padding: 24, boxShadow: themeTokens.shadow
       }}>
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
           <Logo />
         </div>
-        <div className="title" style={{ textAlign: 'center', fontWeight: 900, marginBottom: 6 }}>Welcome to VizAI</div>
+        {/* Screen Title per spec */}
+        <div className="title" style={{ textAlign: 'center', fontWeight: 900, marginBottom: 6 }}>Sign in to VizAI</div>
+        {/* Helper text per spec */}
         <div className="subtitle" style={{ textAlign: 'center', color: 'var(--muted)', marginBottom: 20 }}>
-          Sign in with your research account to continue.
+          Your role determines the dashboard view and available features.
         </div>
-        <label style={{ fontWeight: 700, fontSize: 12, color: '#9CA3AF' }}>Email</label>
-        <input name="email" type="email" placeholder="name@research.org" style={inputStyle} />
-        <label style={{ fontWeight: 700, fontSize: 12, color: '#9CA3AF' }}>Password</label>
-        <input name="password" type="password" placeholder="••••••••" style={inputStyle} />
+
+        {/* Role selector placed before authentication fields */}
+        <div style={{ display: 'grid', gap: 6, marginBottom: 10 }}>
+          <label htmlFor="role" style={{ fontWeight: 700, fontSize: 12, color: '#9CA3AF' }}>
+            Select Role
+          </label>
+          <select
+            id="role"
+            name="role"
+            aria-label="Select Role"
+            defaultValue=""
+            style={{
+              ...inputStyle,
+              margin: 0,
+              appearance: 'auto',
+              WebkitAppearance: 'auto'
+            }}
+          >
+            <option value="" disabled>Choose your role…</option>
+            <option value="keeper">Animal Keeper</option>
+            <option value="researcher">Researcher</option>
+            <option value="veterinarian">Veterinarian</option>
+            {/* Admin (optional) */}
+            <option value="admin">Admin (optional)</option>
+          </select>
+        </div>
+
+        <label htmlFor="email" style={{ fontWeight: 700, fontSize: 12, color: '#9CA3AF' }}>Email/Username</label>
+        <input id="email" name="email" type="email" placeholder="name@organization.com" style={inputStyle} aria-required="true" />
+
+        <label htmlFor="password" style={{ fontWeight: 700, fontSize: 12, color: '#9CA3AF' }}>Password</label>
+        <input id="password" name="password" type="password" placeholder="Enter your password" style={inputStyle} aria-required="true" />
+
         {error ? <ErrorState message={error} /> : null}
-        <button type="submit" style={{ ...primaryBtnStyle, width: '100%', marginTop: 12 }}>Sign In</button>
+        {/* Primary button text per spec */}
+        <button type="submit" style={{ ...primaryBtnStyle, width: '100%', marginTop: 12 }}>Login</button>
+
         <div style={{ marginTop: 12, color: '#9CA3AF', fontSize: 12, textAlign: 'center' }}>
           By continuing you agree to our research-friendly terms.
         </div>
