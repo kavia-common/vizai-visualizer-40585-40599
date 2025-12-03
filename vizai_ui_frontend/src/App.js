@@ -211,6 +211,7 @@ function Logo() {
  * Displays "Logged in as: <Role>" sourced from AuthContext role.
  */
 function NavBar({ dateRange, setDateRange, showChatTab, species, setSpecies }) {
+  // Note: showChatTab is retained for compatibility but not used in the new header layout.
   const location = useLocation();
   const navigate = useNavigate();
   const { authed, role } = useAuth();
@@ -228,14 +229,7 @@ function NavBar({ dateRange, setDateRange, showChatTab, species, setSpecies }) {
     boxShadow: active ? themeTokens.shadow : 'none'
   });
 
-  // PUBLIC_INTERFACE
-  // Go Home handler for "Home" button in top navigation
-  const onHome = () => {
-    navigate('/select-animal', { replace: false });
-  };
-
   const onBrandClick = () => {
-    // Navigate to Animal Selection if unauthenticated, otherwise Dashboard
     if (!authed) {
       navigate('/select-animal');
       return;
@@ -243,86 +237,55 @@ function NavBar({ dateRange, setDateRange, showChatTab, species, setSpecies }) {
     navigate('/dashboard');
   };
 
-  // Alert badge (mock) for Alerts tab
-  const alertsBadge = (
-    <span aria-label="notifications" style={{
-      position: 'absolute', top: -4, right: -4,
-      width: 18, height: 18, borderRadius: 999,
-      background: themeTokens.secondary, color: 'var(--surface)',
-      fontSize: 11, fontWeight: 900,
-      display: 'grid', placeItems: 'center',
-      boxShadow: themeTokens.shadow
-    }}>1</span>
-  );
+  // Map role to a role-based email for display
+  const roleEmail = {
+    keeper: 'keeper@viz.ai',
+    researcher: 'researcher@viz.ai',
+    veterinarian: 'veterinarian@viz.ai',
+  }[role] || 'researcher@viz.ai';
 
   return (
     <div className="nav" style={{
-      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-      padding: 'var(--nav-padding)', position: 'sticky', top: 0, zIndex: 10
+      display: 'grid',
+      gridTemplateColumns: 'auto 1fr auto auto',
+      alignItems: 'center',
+      gap: 16,
+      padding: 'var(--nav-padding)',
+      position: 'sticky',
+      top: 0,
+      zIndex: 10
     }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-        {/* Back button at header/top-left */}
-        <button
-          onClick={() => {
-            if (window.history.length > 1) {
-              window.history.go(-1);
-            } else {
-              navigate('/dashboard');
-            }
-          }}
-          className="focus-ring"
-          aria-label="Back"
-          title="Back"
-          style={{
-            ...primaryGhostBtnStyle,
-            padding: '8px 10px',
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 6
-          }}
-        >
-          ←
-          <span>Back</span>
-        </button>
+      {/* [Logo + VizAI] */}
+      <button
+        onClick={onBrandClick}
+        title="Return to Dashboard"
+        aria-label="VizAI Home"
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 0,
+          padding: 6,
+          borderRadius: 10,
+          border: `1px solid transparent`,
+          background: 'transparent',
+          cursor: 'pointer',
+        }}
+        className="focus-ring"
+      >
+        <Logo />
+        <span className="sr-only">VizAI Home</span>
+      </button>
 
-        {/* Brand button */}
-        <button
-          onClick={onBrandClick}
-          title="Return to Dashboard"
-          aria-label="VizAI Home"
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 0, /* ensure no added gap at the button level */
-            padding: 6,
-            borderRadius: 10,
-            border: `1px solid transparent`,
-            background: 'transparent',
-            cursor: 'pointer',
-          }}
-          className="focus-ring"
-        >
-          <Logo />
-          <span className="sr-only">VizAI Home</span>
-        </button>
-
-        {/* Home button in top navigation */}
-        <button
-          onClick={onHome}
-          className="focus-ring"
-          aria-label="Home"
-          title="Home"
-          style={{ ...primaryGhostBtnStyle }}
-        >
-          Home
-        </button>
-
-        <div style={{ height: 24, width: 1, background: themeTokens.border }} />
-        <label style={{ color: 'var(--muted)', fontSize: 12 }} title="Choose species to filter views">Species</label>
+      {/* [Species Dropdown] with new label copy */}
+      <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+        <label style={{ color: 'var(--muted)', fontSize: 12 }} title="Choose species to filter views">
+          Select Species:
+        </label>
         <select
-          aria-label="Species"
+          aria-label="Select Species: Giant Anteater"
           value={species}
           onChange={(e) => setSpecies(e.target.value)}
+          title="Select Species: Giant Anteater ▾"
           style={{
             background: 'var(--surface)',
             color: themeTokens.text,
@@ -333,54 +296,70 @@ function NavBar({ dateRange, setDateRange, showChatTab, species, setSpecies }) {
             boxShadow: themeTokens.shadow
           }}
         >
-          <option value="Giant Anteater">Giant Anteater</option>
+          <option value="Giant Anteater">Giant Anteater ▾</option>
           <option value="Pangolin" disabled>pangolin (Coming Soon)</option>
           <option value="Sloth" disabled>sloth (Coming Soon)</option>
         </select>
-
-        <div style={{ marginLeft: 8, display: 'flex', gap: 4 }}>
-          <Link to="/dashboard" style={tabStyle(isActive('/dashboard'))} title="Overview metrics">
-            Dashboard
-          </Link>
-          <Link to="/timeline" style={tabStyle(isActive('/timeline'))} title="Behavior Explorer">
-            Timeline
-          </Link>
-          <Link to="/reports" style={tabStyle(isActive('/reports'))} title="Generate reports">
-            Reports
-          </Link>
-          <span style={{ position: 'relative' }}>
-            <Link to="/alerts" style={tabStyle(isActive('/alerts'))} title="Alerts Center">
-              Alerts
-            </Link>
-            {alertsBadge}
-          </span>
-          <Link
-            to={showChatTab ? '/chat' : '/dashboard'}
-            style={{ ...tabStyle(isActive('/chat')), opacity: showChatTab ? 1 : 0.5, cursor: showChatTab ? 'pointer' : 'not-allowed' }}
-            aria-disabled={!showChatTab}
-            title={showChatTab ? 'AI Chat (beta)' : 'AI Chat (disabled)'}
-          >
-            Chat
-          </Link>
-        </div>
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-        <DateRangeSelector value={dateRange} onChange={setDateRange} />
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <StatusBadge status="Active" />
-          <div title="Keyboard: ? for tips" style={{
-            padding: '6px 10px', borderRadius: 999, border: `1px dashed ${themeTokens.border}`, color: 'var(--muted)', fontSize: 12
-          }}>Tips: Press ?</div>
+      {/* [Dashboard|Timeline|Reports] */}
+      <div style={{ display: 'flex', gap: 4, justifyContent: 'center' }}>
+        <Link to="/dashboard" style={tabStyle(isActive('/dashboard'))} title="Dashboard">
+          Dashboard
+        </Link>
+        <Link to="/timeline" style={tabStyle(isActive('/timeline'))} title="Timeline">
+          Timeline
+        </Link>
+        <Link to="/reports" style={tabStyle(isActive('/reports'))} title="Reports">
+          Reports
+        </Link>
+      </div>
+
+      {/* [Date Range Selector] and [User Profile] */}
+      <div style={{ display: 'inline-flex', alignItems: 'center', gap: 16 }}>
+        {/* Updated Date Range label copy */}
+        <div style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>
+          <span style={{ color: 'var(--muted)', fontSize: 12 }}>Date Range:</span>
+          <select
+            aria-label="Date Range: Last 7 Days"
+            value={dateRange}
+            onChange={(e) => setDateRange(e.target.value)}
+            title="Date Range: Last 7 Days ▾"
+            style={{
+              background: themeTokens.surface,
+              color: themeTokens.text,
+              border: `1px solid ${themeTokens.border}`,
+              borderRadius: 12,
+              padding: '8px 12px',
+              fontWeight: 600,
+              boxShadow: themeTokens.shadow,
+            }}
+          >
+            {['Today', 'Last 7 Days', 'Last 30 Days', 'Custom…'].map(opt => (
+              <option key={opt} value={opt}>
+                {opt === 'Last 7 Days' ? 'Last 7 Days ▾' : opt}
+              </option>
+            ))}
+          </select>
         </div>
-        <div style={{
-          display: 'inline-flex', alignItems: 'center', gap: 8, padding: '8px 10px',
-          border: `1px solid ${themeTokens.border}`, borderRadius: 12, background: 'var(--surface)', boxShadow: themeTokens.shadow
-        }}>
-          <div style={{ width: 8, height: 8, borderRadius: 999, background: '#22C55E' }} />
-          <span style={{ fontWeight: 700 }}>
-            Logged in as: {ROLE_LABELS[role] || 'Researcher'}
-          </span>
+
+        {/* User Profile: role-based email with tooltip "Account Settings" */}
+        <div
+          title="Account Settings"
+          aria-label="User Profile"
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 10,
+            padding: '8px 12px',
+            border: `1px solid ${themeTokens.border}`,
+            borderRadius: 12,
+            background: 'var(--surface)',
+            boxShadow: themeTokens.shadow
+          }}
+        >
+          <div style={{ width: 8, height: 8, borderRadius: 999, background: '#22C55E' }} aria-hidden />
+          <span style={{ fontWeight: 700 }}>{roleEmail}</span>
         </div>
       </div>
     </div>
@@ -1372,8 +1351,6 @@ function AuthedLayout({ children }) {
       '/dashboard': 'Dashboard',
       '/timeline': 'Timeline',
       '/reports': 'Reports',
-      '/alerts': 'Alerts',
-      '/chat': 'Chat',
       '/select-animal': 'Animal Selection',
     };
 
@@ -1425,7 +1402,7 @@ function AuthedLayout({ children }) {
       <div style={{ padding: 16, maxWidth: 1200, margin: '0 auto' }}>
         {/* Helper text for navigation */}
         <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
-          Use the Back button to return to the previous view or click Home to start over.
+          Use the top bar to switch species, navigate between Dashboard, Timeline, and Reports, or adjust the date range.
         </div>
 
         {/* Breadcrumbs below top nav on relevant pages */}
