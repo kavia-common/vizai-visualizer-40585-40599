@@ -151,11 +151,12 @@ function Logo() {
       }}
     >
       <img
-        src="/assets/vizai-logo.png"
+        src="/assets/vizai-logo-2.png"
         width={iconSize}
         height={iconSize}
         alt="VizAI Logo"
         title="Return to Dashboard"
+        aria-label="VizAI Home"
         style={{
           display: 'block',
           width: `${iconSize}px`,
