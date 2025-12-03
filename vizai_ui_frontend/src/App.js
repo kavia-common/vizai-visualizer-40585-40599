@@ -213,10 +213,10 @@ function Logo() {
  * Displays "Logged in as: <Role>" sourced from AuthContext role.
  */
 function NavBar({ dateRange, setDateRange, showChatTab, species, setSpecies }) {
-  // Note: showChatTab is retained for compatibility but not used in the new header layout.
+  // Note: showChatTab retained but header simplified to only logo and tabs; species/date move to sidebar.
   const location = useLocation();
   const navigate = useNavigate();
-  const { authed, role } = useAuth();
+  const { authed } = useAuth();
 
   const isActive = (path) => location.pathname === path;
   const tabStyle = (active) => ({
@@ -233,26 +233,16 @@ function NavBar({ dateRange, setDateRange, showChatTab, species, setSpecies }) {
 
   const onBrandClick = () => {
     if (!authed) {
-      navigate('/select-animal');
+      navigate('/login');
       return;
     }
     navigate('/dashboard');
   };
 
-  // Map role to a role-based email for display
-  const roleEmail = {
-    keeper: 'keeper@viz.ai',
-    researcher: 'researcher@viz.ai',
-    veterinarian: 'veterinarian@viz.ai',
-  }[role] || 'researcher@viz.ai';
-
-  // Derive selected role label for header display
-  const roleLabel = ROLE_LABELS[role] || (role ? role.charAt(0).toUpperCase() + role.slice(1) : 'Researcher');
-
   return (
     <div className="nav" style={{
       display: 'grid',
-      gridTemplateColumns: 'auto 1fr auto auto',
+      gridTemplateColumns: 'auto 1fr',
       alignItems: 'center',
       gap: 16,
       padding: 'var(--nav-padding)',
@@ -281,53 +271,8 @@ function NavBar({ dateRange, setDateRange, showChatTab, species, setSpecies }) {
         <span className="sr-only" aria-hidden="true">VizAI Home</span>
       </button>
 
-      {/* [Species Dropdown] with new label copy */}
-      <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-        <label style={{ color: 'var(--muted)', fontSize: 12 }} title="Choose species to filter views">
-          Select Species:
-        </label>
-        <select
-          aria-label="Select Species: Giant Anteater"
-          value={species}
-          onChange={(e) => setSpecies(e.target.value)}
-          title="Select Species: Giant Anteater ▾"
-          style={{
-            background: 'var(--surface)',
-            color: themeTokens.text,
-            border: `1px solid ${themeTokens.border}`,
-            borderRadius: 12,
-            padding: '8px 12px',
-            fontWeight: 700,
-            boxShadow: themeTokens.shadow
-          }}
-        >
-          <option value="Giant Anteater">Giant Anteater ▾</option>
-          <option value="Pangolin" disabled>pangolin (Coming Soon)</option>
-          <option value="Sloth" disabled>sloth (Coming Soon)</option>
-        </select>
-      </div>
-
       {/* [Dashboard|Timeline|Reports] */}
-      <div style={{ display: 'flex', gap: 4, justifyContent: 'center', alignItems: 'center' }}>
-        {/* Role display per spec */}
-        <span
-          title="Your current role controls feature access."
-          aria-label={`Current role is ${roleLabel}`}
-          style={{
-            marginRight: 8,
-            color: 'var(--muted)',
-            fontSize: 12,
-            border: `1px solid ${themeTokens.border}`,
-            background: 'var(--surface)',
-            borderRadius: 12,
-            padding: '6px 10px',
-            boxShadow: themeTokens.shadow,
-            whiteSpace: 'nowrap'
-          }}
-        >
-          Role: {roleLabel}
-        </span>
-
+      <div style={{ display: 'flex', gap: 6, justifyContent: 'center', alignItems: 'center' }}>
         <Link to="/dashboard" style={tabStyle(isActive('/dashboard'))} title="Dashboard">
           Dashboard
         </Link>
@@ -337,54 +282,14 @@ function NavBar({ dateRange, setDateRange, showChatTab, species, setSpecies }) {
         <Link to="/reports" style={tabStyle(isActive('/reports'))} title="Reports">
           Reports
         </Link>
-      </div>
-
-      {/* [Date Range Selector] and [User Profile] */}
-      <div style={{ display: 'inline-flex', alignItems: 'center', gap: 16 }}>
-        {/* Updated Date Range label copy */}
-        <div style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>
-          <span style={{ color: 'var(--muted)', fontSize: 12 }}>Date Range:</span>
-          <select
-            aria-label="Date Range: Last 7 Days"
-            value={dateRange}
-            onChange={(e) => setDateRange(e.target.value)}
-            title="Date Range: Last 7 Days ▾"
-            style={{
-              background: themeTokens.surface,
-              color: themeTokens.text,
-              border: `1px solid ${themeTokens.border}`,
-              borderRadius: 12,
-              padding: '8px 12px',
-              fontWeight: 600,
-              boxShadow: themeTokens.shadow,
-            }}
-          >
-            {['Today', 'Last 7 Days', 'Last 30 Days', 'Custom…'].map(opt => (
-              <option key={opt} value={opt}>
-                {opt === 'Last 7 Days' ? 'Last 7 Days ▾' : opt}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* User Profile: role-based email with tooltip "Account Settings" */}
-        <div
-          title="Account Settings"
-          aria-label="User Profile"
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 10,
-            padding: '8px 12px',
-            border: `1px solid ${themeTokens.border}`,
-            borderRadius: 12,
-            background: 'var(--surface)',
-            boxShadow: themeTokens.shadow
-          }}
-        >
-          <div style={{ width: 8, height: 8, borderRadius: 999, background: '#22C55E' }} aria-hidden />
-          <span style={{ fontWeight: 700 }}>{roleEmail}</span>
-        </div>
+        <Link to="/alerts" style={tabStyle(isActive('/alerts'))} title="Alerts">
+          Alerts
+        </Link>
+        {featureFlags.chat && (
+          <Link to="/chat" style={tabStyle(isActive('/chat'))} title="Chat (beta)">
+            Chat
+          </Link>
+        )}
       </div>
     </div>
   );
@@ -599,31 +504,85 @@ const controlBtnStyle = {
  * Pages
  */
 
-// PUBLIC_INTERFACE
-function LoginPage() {
-  // Bring in role setter so chosen role is reflected across the app after login
-  const { setAuthed, setRole } = useAuth();
+/**
+ * PUBLIC_INTERFACE
+ * Registration page (mock). Stores role in auth context on success then redirects to Login.
+ */
+function RegistrationPage() {
+  const { setRole } = useAuth();
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
   const onSubmit = (e) => {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
-    const selectedRole = String(fd.get('role') || '');
     const email = String(fd.get('email') || '');
     const password = String(fd.get('password') || '');
-    // Validate presence of role in addition to email/password
-    if (!selectedRole) {
-      setError('Please select a role.');
+    const role = String(fd.get('role') || '');
+    if (!email || !password || !role) {
+      setError('Please complete all fields.');
       return;
     }
+    // Mock success: persist role for next login step
+    setRole(role);
+    setError('');
+    navigate('/login', { replace: true });
+  };
+
+  return (
+    <div style={{ minHeight: '100vh', background: themeTokens.background, color: themeTokens.text, display: 'grid', placeItems: 'center', padding: 24 }}>
+      <form onSubmit={onSubmit} style={{
+        width: 'min(100%, 520px)', background: themeTokens.surface, border: `1px solid ${themeTokens.border}`, borderRadius: 16, padding: 24, boxShadow: themeTokens.shadow
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
+          <Logo />
+        </div>
+        <div className="title" style={{ textAlign: 'center', fontWeight: 900, marginBottom: 6 }}>Create your VizAI account</div>
+        <div className="subtitle" style={{ textAlign: 'center', color: 'var(--muted)', marginBottom: 20 }}>
+          Your role determines navigation and permissions.
+        </div>
+
+        <label htmlFor="email-reg" style={{ fontWeight: 700, fontSize: 12, color: '#9CA3AF' }}>Email</label>
+        <input id="email-reg" name="email" type="email" placeholder="name@organization.com" style={inputStyle} aria-required="true" />
+
+        <label htmlFor="password-reg" style={{ fontWeight: 700, fontSize: 12, color: '#9CA3AF' }}>Password</label>
+        <input id="password-reg" name="password" type="password" placeholder="Enter your password" style={inputStyle} aria-required="true" />
+
+        <label htmlFor="role-reg" style={{ fontWeight: 700, fontSize: 12, color: '#9CA3AF' }}>Select Role</label>
+        <select id="role-reg" name="role" defaultValue="" aria-label="Select Role" style={{ ...inputStyle, marginTop: 6 }}>
+          <option value="" disabled>Choose your role…</option>
+          <option value="keeper">Animal Keeper</option>
+          <option value="researcher">Researcher</option>
+          <option value="veterinarian">Veterinarian</option>
+          <option value="admin">Admin</option>
+        </select>
+
+        {error ? <ErrorState message={error} /> : null}
+        <button type="submit" style={{ ...primaryBtnStyle, width: '100%', marginTop: 12 }}>Register</button>
+        <div style={{ marginTop: 12, color: '#9CA3AF', fontSize: 12, textAlign: 'center' }}>
+          Already have an account? <Link to="/login">Sign in</Link>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+// PUBLIC_INTERFACE
+function LoginPage() {
+  const { setAuthed } = useAuth();
+  const [error, setError] = useState('');
+  const navigate = useNavigate();
+
+  const onSubmit = (e) => {
+    e.preventDefault();
+    const fd = new FormData(e.currentTarget);
+    const email = String(fd.get('email') || '');
+    const password = String(fd.get('password') || '');
     if (!email || !password) {
       setError('Please enter a valid email and password.');
       return;
     }
     setError('');
-    // Update global auth context with chosen role before authenticating
-    setRole(selectedRole);
     setAuthed(true);
     navigate('/select-animal', { replace: true });
   };
@@ -636,37 +595,9 @@ function LoginPage() {
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
           <Logo />
         </div>
-        {/* Screen Title per spec */}
         <div className="title" style={{ textAlign: 'center', fontWeight: 900, marginBottom: 6 }}>Sign in to VizAI</div>
-        {/* Helper text per spec */}
         <div className="subtitle" style={{ textAlign: 'center', color: 'var(--muted)', marginBottom: 20 }}>
           Your role determines the dashboard view and available features.
-        </div>
-
-        {/* Role selector placed before authentication fields */}
-        <div style={{ display: 'grid', gap: 6, marginBottom: 10 }}>
-          <label htmlFor="role" style={{ fontWeight: 700, fontSize: 12, color: '#9CA3AF' }}>
-            Select Role
-          </label>
-          <select
-            id="role"
-            name="role"
-            aria-label="Select Role"
-            defaultValue=""
-            style={{
-              ...inputStyle,
-              margin: 0,
-              appearance: 'auto',
-              WebkitAppearance: 'auto'
-            }}
-          >
-            <option value="" disabled>Choose your role…</option>
-            <option value="keeper">Animal Keeper</option>
-            <option value="researcher">Researcher</option>
-            <option value="veterinarian">Veterinarian</option>
-            {/* Admin (optional) */}
-            <option value="admin">Admin (optional)</option>
-          </select>
         </div>
 
         <label htmlFor="email" style={{ fontWeight: 700, fontSize: 12, color: '#9CA3AF' }}>Email/Username</label>
@@ -676,11 +607,10 @@ function LoginPage() {
         <input id="password" name="password" type="password" placeholder="Enter your password" style={inputStyle} aria-required="true" />
 
         {error ? <ErrorState message={error} /> : null}
-        {/* Primary button text per spec */}
         <button type="submit" style={{ ...primaryBtnStyle, width: '100%', marginTop: 12 }}>Login</button>
 
         <div style={{ marginTop: 12, color: '#9CA3AF', fontSize: 12, textAlign: 'center' }}>
-          By continuing you agree to our research-friendly terms.
+          New to VizAI? <Link to="/register">Create an account</Link>
         </div>
       </form>
     </div>
@@ -982,58 +912,14 @@ function DashboardPage() {
                 </div>
 
                 {pieMode ? (
-                  /* Pie View (mocked, accessible, using CSS with theme vars) */
-                  <div role="img" aria-label="Pie chart of behavior duration percentages"
-                       style={{ display: 'grid', gap: 8 }}>
-                    {/* Legend */}
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                      {BEHAVIOR_CATEGORIES.map((b, idx) => {
-                        const color = pieColor(idx);
-                        return (
-                          <div
-                            key={b}
-                            title={fmtTooltip(b)}
-                            style={{ display: 'inline-flex', alignItems: 'center', gap: 6, border: `1px solid ${themeTokens.border}`, padding: '6px 8px', borderRadius: 10, background: 'var(--surface)' }}>
-                            <span aria-hidden style={{ width: 10, height: 10, borderRadius: 999, background: color, boxShadow: themeTokens.shadow }} />
-                            <span style={{ fontSize: 12, color: themeTokens.text }}>{b}</span>
-                          </div>
-                        );
-                      })}
-                    </div>
-
-                    {/* Simple "pie" representation using a conic gradient */}
-                    <div
-                      style={{
-                        width: 240,
-                        height: 240,
-                        borderRadius: '50%',
-                        border: `1px solid ${themeTokens.border}`,
-                        boxShadow: themeTokens.shadow,
-                        background: conicGradientFromData(BEHAVIOR_CATEGORIES, mockDurations, totalDuration),
-                        margin: '8px auto'
-                      }}
-                      title="Pie chart"
-                    />
-
-                    {/* Accessible textual breakdown with tooltips exactly formatted */}
-                    <div style={{ display: 'grid', gap: 4 }}>
-                      {BEHAVIOR_CATEGORIES.map((b) => {
-                        const mins = mockDurations[b] || 0;
-                        const pct = totalDuration ? Math.round((mins / totalDuration) * 100) : 0;
-                        return (
-                          <div key={b} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#6B7280' }}>
-                            <span>{b}</span>
-                            <span title={fmtTooltip(b)}>{`${formatHhMm(mins)} (${pct}%)`}</span>
-                          </div>
-                        );
-                      })}
-                    </div>
-
-                    {/* Helper text */}
-                    <div style={{ color: 'var(--muted)', fontSize: 12, marginTop: 4 }}>
-                      Pie chart shows percentage of total time spent in each behavior.
-                    </div>
-                  </div>
+                  /* Pie View with clickable segments (legend acts as segments trigger) */
+                  <DashboardPie
+                    categories={BEHAVIOR_CATEGORIES}
+                    durations={mockDurations}
+                    total={totalDuration}
+                    colorFor={pieColor}
+                    fmtTooltip={fmtTooltip}
+                  />
                 ) : (
                   /* Stacked Bar View */
                   <div role="img" aria-label="Stacked bar chart of behavior duration in hours"
@@ -1123,6 +1009,87 @@ function DashboardPage() {
   );
 }
 
+/**
+ * PUBLIC_INTERFACE
+ * Clickable pie section (legend items act as segments) that navigates to Timeline with behavior filter.
+ */
+function DashboardPie({ categories, durations, total, colorFor, fmtTooltip }) {
+  const navigate = useNavigate();
+  const onOpen = (behavior) => {
+    // route with behavior + carry current date range as state
+    navigate('/timeline', { state: { behaviorFilter: behavior, dateRangeHint: 'from-dashboard' } });
+  };
+
+  // Build gradient just as visual; click handled on legend items
+  const gradientBg = (() => {
+    let acc = 0;
+    const parts = [];
+    categories.forEach((k, idx) => {
+      const mins = durations[k] || 0;
+      const frac = total ? mins / total : 0;
+      const start = acc * 100;
+      const end = (acc + frac) * 100;
+      const color = colorFor(idx);
+      parts.push(`${color} ${start}% ${end}%`);
+      acc += frac;
+    });
+    return parts.length ? `conic-gradient(${parts.join(', ')})` : themeTokens.primary;
+  })();
+
+  return (
+    <div role="img" aria-label="Pie chart of behavior duration percentages" style={{ display: 'grid', gap: 8 }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+        {categories.map((b, idx) => {
+          const color = colorFor(idx);
+          return (
+            <button
+              key={b}
+              onClick={() => onOpen(b)}
+              title={`${fmtTooltip(b)} — Click to open Timeline`}
+              aria-label={`Open Timeline filtered by ${b}`}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 6, border: `1px solid ${themeTokens.border}`, padding: '6px 8px', borderRadius: 10, background: 'var(--surface)', cursor: 'pointer' }}
+              className="focus-ring"
+            >
+              <span aria-hidden style={{ width: 10, height: 10, borderRadius: 999, background: color, boxShadow: themeTokens.shadow }} />
+              <span style={{ fontSize: 12, color: themeTokens.text }}>{b}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      <div
+        style={{
+          width: 240,
+          height: 240,
+          borderRadius: '50%',
+          border: `1px solid ${themeTokens.border}`,
+          boxShadow: themeTokens.shadow,
+          background: gradientBg,
+          margin: '8px auto'
+        }}
+        title="Pie chart"
+      />
+
+      <div style={{ display: 'grid', gap: 4 }}>
+        {categories.map((b) => {
+          const mins = durations[b] || 0;
+          const pct = total ? Math.round((mins / total) * 100) : 0;
+          return (
+            <div key={b} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#6B7280' }}>
+              <span>{b}</span>
+              <span title={fmtTooltip(b)}>{`${Math.floor(mins / 60)}h ${String(mins % 60).padStart(2, '0')}m (${pct}%)`}</span>
+            </div>
+          );
+        })}
+      </div>
+
+      <div style={{ color: 'var(--muted)', fontSize: 12, marginTop: 4 }}>
+        Click a segment to open Timeline for details.
+      </div>
+    </div>
+  );
+}
+
 function ChartBlock({ title, subtitle, children }) {
   return (
     <div className="card" style={{
@@ -1137,20 +1104,23 @@ function ChartBlock({ title, subtitle, children }) {
 
 // PUBLIC_INTERFACE
 function TimelinePage() {
+  const location = useLocation();
   // View controls (kept for compatibility)
-  const [view, setView] = useState('grid');
-  const [zoom, setZoom] = useState(100);
+  const [view] = useState('grid');
   const [openVideo, setOpenVideo] = useState(false);
 
   // Behavior Timeline section state
   const TIME_RANGES = ['1h', '6h', '12h', '24h', 'Day', 'Week'];
   const [activeRange, setActiveRange] = useState('6h');
 
+  // Read behavior filter passed from dashboard
+  const initialBehavior = location.state?.behaviorFilter || 'All';
+
   // Mock "current camera"
   const currentCamera = 'Camera 1';
 
   // Mock behavior items for cards and table as specified
-  const behaviorItems = [
+  const allBehaviorItems = [
     {
       type: 'Recumbent',
       start: '14:12',
@@ -1193,7 +1163,25 @@ function TimelinePage() {
     },
   ];
 
+  // Filter by behavior if navigated from Dashboard; otherwise include all
+  const behaviorItems = allBehaviorItems.filter(it => initialBehavior === 'All' ? true : it.type === initialBehavior);
+
   const resultCount = behaviorItems.length;
+
+  // Totals and metrics
+  const totalMinutes = behaviorItems.reduce((sum, it) => sum + (it.durationMin || 0), 0);
+  const totalHours = (totalMinutes / 60).toFixed(2);
+
+  const breakdown = behaviorItems.reduce((acc, it) => {
+    if (!acc[it.type]) acc[it.type] = { count: 0, mins: 0 };
+    acc[it.type].count += 1;
+    acc[it.type].mins += it.durationMin || 0;
+    return acc;
+  }, {});
+
+  const confidenceValues = behaviorItems.map(b => Math.round(b.confidence * 100));
+  const confMin = confidenceValues.length ? Math.min(...confidenceValues) : 0;
+  const confMax = confidenceValues.length ? Math.max(...confidenceValues) : 0;
 
   // Tooltip copy for confidence
   const CONFIDENCE_TOOLTIP = 'Confidence: AI classification accuracy for this behavior.';
@@ -1378,8 +1366,16 @@ function TimelinePage() {
         <div style={{ display: 'grid', gap: 12 }}>
           {/* Behavior Timeline section header */}
           <div className="card" style={{ borderRadius: 16, padding: 12, display: 'grid', gap: 10 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <div style={{ fontWeight: 900, fontSize: 18 }}>Behavior Timeline</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+              <div style={{ fontWeight: 900, fontSize: 18 }}>
+                Behavior Timeline {initialBehavior !== 'All' ? `• ${initialBehavior}` : ''}
+              </div>
+              <div className="muted" style={{ fontSize: 12 }}>
+                Total duration: <strong>{totalHours} hours</strong>
+              </div>
+              <div className="muted" style={{ fontSize: 12 }}>
+                Confidence range: <strong>{confMin}%–{confMax}%</strong>
+              </div>
               <div style={{ marginLeft: 'auto', display: 'flex', gap: 6 }} role="tablist" aria-label="Time ranges">
                 {TIME_RANGES.map(r => (
                   <Tab key={r} label={r} active={activeRange === r} onClick={() => setActiveRange(r)} />
@@ -1388,6 +1384,22 @@ function TimelinePage() {
             </div>
             {/* Camera timeline bar */}
             <CameraTimelineBar />
+            {/* Activity breakdown */}
+            <div className="card" style={{ padding: 12, borderRadius: 12 }}>
+              <div style={{ fontWeight: 800, marginBottom: 8 }}>Activity Breakdown</div>
+              {Object.keys(breakdown).length === 0 ? (
+                <EmptyState title="No activity" description="No events match the current filters." />
+              ) : (
+                <div style={{ display: 'grid', gap: 6 }}>
+                  {Object.entries(breakdown).map(([name, v]) => (
+                    <div key={name} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14 }}>
+                      <span>{name}</span>
+                      <span>{v.count} events • {Math.floor(v.mins / 60)}h {String(v.mins % 60).padStart(2, '0')}m</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Cards list per spec, replacing older generic cards */}
@@ -1497,9 +1509,27 @@ function BehaviorEventCard({ onOpenVideo }) {
 function ReportsPage() {
   const [type, setType] = useState('Behavior Duration Analysis');
   const [dateRange, setDateRange] = useState('Last 7 Days');
+  const [behavior, setBehavior] = useState('All');
+  const [hours, setHours] = useState(24);
   const [openExport, setOpenExport] = useState(false);
 
   const isBehaviorDuration = type === 'Behavior Duration Analysis';
+  const BEHAVIOR_CATEGORIES = ['All','Recumbent','Non-Recumbent','Scratching','Self-Directed','Pacing','Moving'];
+
+  const helper = 'Use Behavior, Date Range, and Hours to refine the report. Use Download PDF/Excel to export current view (mock).';
+
+  const downloadMock = (kind) => {
+    const content = `VizAI Report (${kind})\nType: ${type}\nBehavior: ${behavior}\nDate Range: ${dateRange}\nHours: ${hours}\nGenerated: ${new Date().toISOString()}\n`;
+    const blob = new Blob([content], { type: kind === 'PDF' ? 'application/pdf' : 'application/vnd.ms-excel' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `vizai-report-${Date.now()}.${kind === 'PDF' ? 'pdf' : 'xlsx'}`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  };
 
   return (
     <AuthedLayout>
@@ -1508,10 +1538,10 @@ function ReportsPage() {
           Reports – Generate summaries, trends, and welfare assessments.
         </div>
         <div className="muted" style={{ fontSize: 12 }}>
-          Select report type and date range. Export as PDF, Excel, or PowerPoint.
+          {helper}
         </div>
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: 16 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '360px 1fr', gap: 16 }}>
         <div className="card" style={{ borderRadius: 16, padding: 16 }}>
           <div style={{ fontWeight: 800, marginBottom: 10 }}>Report Builder</div>
           <div style={{ display: 'grid', gap: 10 }}>
@@ -1529,6 +1559,12 @@ function ReportsPage() {
                 : 'Choose a report type to see its description.'}
             </div>
             <div>
+              <label style={filterLabel}>Behavior</label>
+              <select value={behavior} onChange={(e) => setBehavior(e.target.value)} style={selectStyle}>
+                {BEHAVIOR_CATEGORIES.map(b => <option key={b} value={b}>{b}</option>)}
+              </select>
+            </div>
+            <div>
               <label style={filterLabel}>Date Range</label>
               <select value={dateRange} onChange={(e) => setDateRange(e.target.value)} style={selectStyle}>
                 <option>Today</option>
@@ -1538,6 +1574,18 @@ function ReportsPage() {
               </select>
             </div>
             <div>
+              <label style={filterLabel}>Hours</label>
+              <input
+                type="number"
+                min={1}
+                max={720}
+                value={hours}
+                onChange={(e) => setHours(Number(e.target.value || 0))}
+                style={{ ...selectStyle, appearance: 'textfield' }}
+                aria-label="Hours"
+              />
+            </div>
+            <div>
               <label style={filterLabel}>Parameters</label>
               <div style={{ display: 'grid', gap: 6 }}>
                 <label style={{ color: '#D1D5DB', fontSize: 14 }}><input type="checkbox" defaultChecked /> Include charts</label>
@@ -1545,7 +1593,11 @@ function ReportsPage() {
                 <label style={{ color: '#D1D5DB', fontSize: 14 }}><input type="checkbox" defaultChecked /> Async email export</label>
               </div>
             </div>
-            <button style={primaryBtnStyle} onClick={() => setOpenExport(true)}>Export</button>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <button type="button" style={primaryBtnStyle} onClick={() => downloadMock('PDF')}>Download PDF</button>
+              <button type="button" style={primaryGhostBtnStyle} onClick={() => downloadMock('Excel')}>Download Excel</button>
+              <button type="button" style={primaryGhostBtnStyle} onClick={() => setOpenExport(true)}>Export (Mock)</button>
+            </div>
             <div style={{ color: '#9CA3AF', fontSize: 12 }}>
               Exports may take a few minutes. You can continue exploring while we generate your report.
             </div>
@@ -1557,7 +1609,7 @@ function ReportsPage() {
           </div>
           <EmptyState
             title={isBehaviorDuration ? 'No behavior duration data available for this period.' : 'Report Preview'}
-            description={isBehaviorDuration ? '' : 'Preview placeholder for selected type and parameters.'}
+            description={isBehaviorDuration ? '' : `Type: ${type} • Behavior: ${behavior} • Range: ${dateRange} • Hours: ${hours}`}
           />
         </div>
       </div>
@@ -1570,7 +1622,10 @@ function ReportsPage() {
             <div style={{ color: '#D1D5DB', marginBottom: 16 }}>
               Your report "{type}" for {dateRange} is being generated. We will notify you when it’s ready.
             </div>
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
+              <button style={primaryGhostBtnStyle} onClick={() => downloadMock('PDF')}>Download PDF</button>
+              <button style={primaryGhostBtnStyle} onClick={() => downloadMock('Excel')}>Download Excel</button>
+              <span style={{ flex: 1 }} />
               <button style={primaryGhostBtnStyle} onClick={() => setOpenExport(false)}>Close</button>
               <button style={primaryBtnStyle} onClick={() => setOpenExport(false)}>Okay</button>
             </div>
@@ -1748,6 +1803,44 @@ function AuthedLayout({ children }) {
     );
   };
 
+  // Sidebar with Species and Date Range per spec
+  const Sidebar = () => (
+    <aside className="card" style={{ width: 260, padding: 16, borderRadius: 16, height: 'fit-content', position: 'sticky', top: 88 }}>
+      <div style={{ fontWeight: 800, marginBottom: 10 }}>Filters</div>
+      <div style={{ display: 'grid', gap: 12 }}>
+        <div>
+          <label style={{ fontSize: 12, color: 'var(--muted)', fontWeight: 700 }}>Select Species</label>
+          <select
+            aria-label="Select Species"
+            value={species}
+            onChange={(e) => setSpecies(e.target.value)}
+            style={selectStyle}
+            title="Select Species: Giant Anteater ▾"
+          >
+            <option value="Giant Anteater">Giant Anteater ▾</option>
+            <option value="Pangolin" disabled>Pangolin (Coming Soon)</option>
+            <option value="Sloth" disabled>Sloth (Coming Soon)</option>
+          </select>
+        </div>
+        <div>
+          <label style={{ fontSize: 12, color: 'var(--muted)', fontWeight: 700 }}>Date Range</label>
+          <select
+            aria-label="Date Range"
+            value={dateRange}
+            onChange={(e) => setDateRange(e.target.value)}
+            style={selectStyle}
+            title="Date Range: Last 7 Days ▾"
+          >
+            <option>Today</option>
+            <option>Last 7 Days</option>
+            <option>Last 30 Days</option>
+            <option>Custom…</option>
+          </select>
+        </div>
+      </div>
+    </aside>
+  );
+
   return (
     <div style={{ minHeight: '100vh', background: themeTokens.background, color: themeTokens.text }}>
       <ConnectionBanner visible={connLost} />
@@ -1759,54 +1852,29 @@ function AuthedLayout({ children }) {
         setSpecies={setSpecies}
       />
       <div style={{ padding: 16, maxWidth: 1200, margin: '0 auto' }}>
-        {/* Helper text for navigation */}
-        <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
-          Use the top bar to switch species, navigate between Dashboard, Timeline, and Reports, or adjust the date range.
-        </div>
-
         {/* Breadcrumbs below top nav on relevant pages */}
         <Breadcrumbs />
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-          <span title="Project status" style={{ fontSize: 12, color: 'var(--muted)' }}>
-            Environment: {process.env.REACT_APP_NODE_ENV || 'development'} • API: {process.env.REACT_APP_API_BASE || 'mock'}
-          </span>
-          <div style={{ marginLeft: 'auto', display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-            {/* Keep role switcher for demo preview; role still shown in header as readout */}
-            <label htmlFor="demo-role" style={{ fontSize: 12, color: 'var(--muted)' }}>Role:</label>
-            <select
-              id="demo-role"
-              aria-label="Role"
-              value={role}
-              onChange={(e) => setRole(e.target.value)}
-              style={{
-                background: 'var(--surface)',
-                color: themeTokens.text,
-                border: `1px solid ${themeTokens.border}`,
-                borderRadius: 12,
-                padding: '6px 10px',
-                fontWeight: 700,
-                boxShadow: themeTokens.shadow,
-              }}
-              title="Switch role for preview"
-            >
-              <option value="keeper">Animal Keeper</option>
-              <option value="researcher">Researcher</option>
-              <option value="veterinarian">Veterinarian</option>
-            </select>
-            <span style={{ fontSize: 12, color: 'var(--muted)' }}>
-              Alerts: <strong style={{ color: themeTokens.secondary }}>{alertsCount}</strong>
-            </span>
+        {/* Main layout with left sidebar */}
+        <div style={{ display: 'grid', gridTemplateColumns: '260px 1fr', gap: 16 }}>
+          <Sidebar />
+          <div>
+            <div className="muted" style={{ fontSize: 12, marginBottom: 8 }}>
+              Use the left panel to change Species or Date Range. Tabs above navigate between Dashboard, Timeline, and Reports.
+            </div>
+            {children}
+            <div style={{ marginTop: 16 }}>
+              <button style={primaryGhostBtnStyle} onClick={() => setConnLost(v => !v)}>
+                Toggle Connection Banner
+              </button>
+              <span style={{ marginLeft: 8, color: 'var(--muted)', fontSize: 12 }}>
+                Research tip: behavior vocabulary is consistent across views.
+              </span>
+              <span style={{ marginLeft: 8, color: 'var(--muted)', fontSize: 12 }}>
+                Alerts: <strong style={{ color: themeTokens.secondary }}>{alertsCount}</strong>
+              </span>
+            </div>
           </div>
-        </div>
-        {children}
-        <div style={{ marginTop: 16 }}>
-          <button style={primaryGhostBtnStyle} onClick={() => setConnLost(v => !v)}>
-            Toggle Connection Banner
-          </button>
-          <span style={{ marginLeft: 8, color: 'var(--muted)', fontSize: 12 }}>
-            Research tip: behavior vocabulary is consistent across views.
-          </span>
         </div>
       </div>
     </div>
@@ -1845,6 +1913,7 @@ function App() {
     <AuthContext.Provider value={authValue}>
       <BrowserRouter>
         <Routes>
+          <Route path="/register" element={<RegistrationPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/select-animal" element={
             <ProtectedRoute>
@@ -1876,7 +1945,7 @@ function App() {
               <ChatPage />
             </ProtectedRoute>
           } />
-          <Route path="/" element={<Navigate to="/login" replace />} />
+          <Route path="/" element={<Navigate to="/register" replace />} />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </BrowserRouter>
