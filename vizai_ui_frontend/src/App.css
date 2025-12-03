@@ -114,6 +114,9 @@
   filter: none !important;
   margin: 0 !important;
   padding: 0 !important;
+  /* Override any generic nav constraints that may hide/limit images */
+  transform: none !important;
+  mix-blend-mode: normal !important;
 }
 
 .dropdown {

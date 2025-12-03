@@ -132,9 +132,9 @@ function DateRangeSelector({ value, onChange }) {
 function Logo() {
   /**
    * Brand logo + text (single instance).
-   * - 56x56 icon for clear visibility
+   * - 64x64 icon for clear visibility
    * - 8px spacing, vertical centering, bold single "VizAI" in brand color
-   * - Accessibility: alt='VizAI Logo', title='Return to Dashboard'
+   * - Accessibility: alt='VizAI Logo', title='Return to Dashboard', aria-label on wrapper via parent button
    * - Explicit sizing with CSS variable fallback to guarantee rendering
    */
   const sizePx = 64; // enforce explicit fixed size via attributes and CSS fallback to --brand-icon-size
@@ -143,8 +143,8 @@ function Logo() {
     <div
       style={{
         display: 'inline-flex',
-        alignItems: 'center',     // vertical centering
-        gap: '8px',               // exactly 8px spacing
+        alignItems: 'center',
+        gap: '8px',
         fontWeight: 900,
         lineHeight: 1,
         color: 'var(--text)',
@@ -166,6 +166,8 @@ function Logo() {
           filter: 'none',
           opacity: 1,
           visibility: 'visible',
+          maxWidth: 'none',
+          maxHeight: 'none',
         }}
       />
       <span
