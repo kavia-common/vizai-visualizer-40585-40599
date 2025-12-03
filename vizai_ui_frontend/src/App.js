@@ -64,7 +64,11 @@ const primaryGhostBtnStyle = {
 };
 
 function Logo() {
-  // Show only the image logo per requirement (remove adjacent brand text).
+  /**
+   * PUBLIC_INTERFACE
+   * Image-only logo for all auth and app layouts.
+   * Ensures no brand text is rendered (no adjacent text nodes or pseudo-elements).
+   */
   const sizePx = 64;
   return (
     <div
@@ -72,9 +76,7 @@ function Logo() {
       style={{
         display: 'inline-flex',
         alignItems: 'center',
-        lineHeight: 1,
-        color: 'var(--text)',
-        /* remove extra horizontal gap since text is gone */
+        lineHeight: 0,
         gap: 0,
         marginLeft: '16px',
         padding: 0,
@@ -92,8 +94,9 @@ function Logo() {
           height: `${sizePx}px`,
           objectFit: 'contain',
           borderRadius: 12,
+          margin: 0,
+          padding: 0,
         }}
-        title="Go to Dashboard"
       />
     </div>
   );
@@ -280,7 +283,7 @@ function LoginPage() {
         <button type="submit" style={{ ...primaryBtnStyle, width: '100%', marginTop: 12 }}>Login</button>
 
         <div style={{ marginTop: 12, color: '#9CA3AF', fontSize: 12, textAlign: 'center' }}>
-          New to VizAI? <Link to="/register">Create an account</Link>
+          New user? <Link to="/register">Create an account</Link>
         </div>
       </form>
     </div>

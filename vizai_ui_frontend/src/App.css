@@ -128,6 +128,11 @@
   /* Ensure no leftover text node causes spacing */
   line-height: 0 !important;
 }
+/* Prevent any pseudo-element text from showing near the logo */
+.nav .brand::before,
+.nav .brand::after {
+  content: none !important;
+}
 
 /* Logo sizing: fixed 64x64 square */
 .nav img[alt="VizAI Logo"] {
