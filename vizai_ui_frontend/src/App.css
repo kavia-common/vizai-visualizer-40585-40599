@@ -103,8 +103,8 @@
 
 /* Ensure the brand logo image remains visible and sized */
 .nav img[alt="VizAI Logo"] {
-  width: 24px !important;
-  height: 24px !important;
+  width: var(--brand-icon-size, 32px) !important;
+  height: var(--brand-icon-size, 32px) !important;
   display: inline-block !important;
   object-fit: contain !important;
   opacity: 1 !important;

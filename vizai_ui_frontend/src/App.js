@@ -133,30 +133,33 @@ function Logo() {
   /**
    * Brand logo + text (single instance).
    * Ensures:
-   * - Explicit 24x24 icon sizing
-   * - display:block to avoid layout collapse
+   * - Explicit 32x32 icon sizing
+   * - Inline-flex alignment for vertical centering
+   * - 8px spacing between logo and text
    * - No opacity/filter that could hide the logo
-   * - Sufficient contrast on current background
+   * - Single bold "VizAI" in brand color
+   * - ARIA labels and tooltip for accessibility
    */
-  const iconSize = 24; // enforce explicit size per requirement
+  const iconSize = 32; // 32x32 per requirement
   return (
     <div
       style={{
         display: 'inline-flex',
         alignItems: 'center',
-        gap: '8px',
+        gap: 'var(--brand-gap, 8px)',
         fontWeight: 900,
         lineHeight: 1,
         color: 'var(--text)',
       }}
+      aria-label="VizAI brand"
     >
       <img
-        src="/assets/vizai-logo-2.png"
+        src="/assets/vizai-logo.png"
         width={iconSize}
         height={iconSize}
         alt="VizAI Logo"
-        title="Return to Dashboard"
-        aria-label="VizAI Home"
+        title="Go to VizAI home"
+        aria-hidden={false}
         style={{
           display: 'block',
           width: `${iconSize}px`,
@@ -164,15 +167,18 @@ function Logo() {
           objectFit: 'contain',
           filter: 'none',
           opacity: 1,
+          visibility: 'visible',
         }}
       />
       <span
+        title="VizAI"
         style={{
           color: 'var(--primary)',
           fontSize: 'var(--brand-text-size)',
-          letterSpacing: 0.5,
+          letterSpacing: 0.25,
           lineHeight: 1,
           whiteSpace: 'nowrap',
+          fontWeight: 900,
         }}
       >
         VizAI
