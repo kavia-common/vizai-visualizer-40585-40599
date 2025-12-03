@@ -244,6 +244,9 @@ function NavBar({ dateRange, setDateRange, showChatTab, species, setSpecies }) {
     veterinarian: 'veterinarian@viz.ai',
   }[role] || 'researcher@viz.ai';
 
+  // Derive selected role label for header display
+  const roleLabel = ROLE_LABELS[role] || (role ? role.charAt(0).toUpperCase() + role.slice(1) : 'Researcher');
+
   return (
     <div className="nav" style={{
       display: 'grid',
@@ -303,7 +306,26 @@ function NavBar({ dateRange, setDateRange, showChatTab, species, setSpecies }) {
       </div>
 
       {/* [Dashboard|Timeline|Reports] */}
-      <div style={{ display: 'flex', gap: 4, justifyContent: 'center' }}>
+      <div style={{ display: 'flex', gap: 4, justifyContent: 'center', alignItems: 'center' }}>
+        {/* Role display per spec */}
+        <span
+          title="Your current role controls feature access."
+          aria-label={`Current role is ${roleLabel}`}
+          style={{
+            marginRight: 8,
+            color: 'var(--muted)',
+            fontSize: 12,
+            border: `1px solid ${themeTokens.border}`,
+            background: 'var(--surface)',
+            borderRadius: 12,
+            padding: '6px 10px',
+            boxShadow: themeTokens.shadow,
+            whiteSpace: 'nowrap'
+          }}
+        >
+          Role: {roleLabel}
+        </span>
+
         <Link to="/dashboard" style={tabStyle(isActive('/dashboard'))} title="Dashboard">
           Dashboard
         </Link>
@@ -1631,46 +1653,96 @@ function AuthedLayout({ children }) {
   // PUBLIC_INTERFACE
   // Breadcrumbs component renders: Home > Giant Anteater > Dashboard
   const Breadcrumbs = () => {
+    // Hooks must be at top-level of component
+    const navigate = useNavigate();
+
     // Map route path to label
     const pathToLabel = {
       '/dashboard': 'Dashboard',
       '/timeline': 'Timeline',
       '/reports': 'Reports',
-      '/select-animal': 'Animal Selection',
+      '/select-animal': 'Dashboard', // When at selection, show "Dashboard" as final crumb? We'll suppress crumb on selection below.
     };
 
-    // Relevant pages exclude login
+    // Exclude login from breadcrumbs
     const show = location.pathname !== '/login';
     if (!show) return null;
 
     const currentLabel = pathToLabel[location.pathname] || 'Dashboard';
     const homeHref = '/select-animal';
 
+    // Back handler: go to previous history, fallback to Dashboard
+    const onBack = () => {
+      if (window.history && window.history.length > 1) {
+        navigate(-1);
+      } else {
+        navigate('/dashboard');
+      }
+    };
+
+    // Render crumbs in exact copy: "Home > Giant Anteater > Dashboard"
+    const showCrumbs =
+      location.pathname === '/dashboard' ||
+      location.pathname === '/timeline' ||
+      location.pathname === '/reports';
+
     return (
-      <nav
-        aria-label="Breadcrumb"
-        style={{
-          marginTop: 8,
-          marginBottom: 8,
-          display: 'flex',
-          alignItems: 'center',
-          gap: 8,
-          color: 'var(--muted)',
-          fontSize: 12,
-        }}
-      >
-        <Link to={homeHref} title="Go to Home (Animal Selection)" aria-label="Home" style={{ color: themeTokens.primary }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '8px 0' }}>
+        {/* Back button with exact copy and a11y */}
+        <button
+          type="button"
+          onClick={onBack}
+          aria-label="Go back to previous screen"
+          title="Return to previous page"
+          className="focus-ring"
+          style={{
+            background: 'transparent',
+            color: themeTokens.text,
+            border: `1px solid ${themeTokens.border}`,
+            borderRadius: 10,
+            padding: '6px 10px',
+            cursor: 'pointer',
+          }}
+        >
+          ← Back
+        </button>
+
+        {/* Home button routes to Animal Selection */}
+        <Link
+          to={homeHref}
+          title="Go to Animal Selection"
+          aria-label="Home"
+          style={{
+            ...primaryGhostBtnStyle,
+            textDecoration: 'none',
+            padding: '6px 10px'
+          }}
+        >
           Home
         </Link>
-        <span aria-hidden>›</span>
-        <Link to={homeHref} title="Giant Anteater" aria-label="Giant Anteater" style={{ color: themeTokens.primary }}>
-          Giant Anteater
-        </Link>
-        <span aria-hidden>›</span>
-        <span aria-current="page" style={{ color: themeTokens.text, fontWeight: 700 }}>
-          {currentLabel}
-        </span>
-      </nav>
+
+        {/* Breadcrumb trail */}
+        {showCrumbs && (
+          <nav
+            aria-label="Breadcrumb"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              color: 'var(--muted)',
+              fontSize: 12,
+            }}
+          >
+            <span>Home</span>
+            <span aria-hidden>{'>'}</span>
+            <span>Giant Anteater</span>
+            <span aria-hidden>{'>'}</span>
+            <span aria-current="page" style={{ color: themeTokens.text, fontWeight: 700 }}>
+              {currentLabel}
+            </span>
+          </nav>
+        )}
+      </div>
     );
   };
 
@@ -1698,8 +1770,10 @@ function AuthedLayout({ children }) {
             Environment: {process.env.REACT_APP_NODE_ENV || 'development'} • API: {process.env.REACT_APP_API_BASE || 'mock'}
           </span>
           <div style={{ marginLeft: 'auto', display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontSize: 12, color: 'var(--muted)' }}>Role:</span>
+            {/* Keep role switcher for demo preview; role still shown in header as readout */}
+            <label htmlFor="demo-role" style={{ fontSize: 12, color: 'var(--muted)' }}>Role:</label>
             <select
+              id="demo-role"
               aria-label="Role"
               value={role}
               onChange={(e) => setRole(e.target.value)}
@@ -1712,6 +1786,7 @@ function AuthedLayout({ children }) {
                 fontWeight: 700,
                 boxShadow: themeTokens.shadow,
               }}
+              title="Switch role for preview"
             >
               <option value="keeper">Animal Keeper</option>
               <option value="researcher">Researcher</option>
