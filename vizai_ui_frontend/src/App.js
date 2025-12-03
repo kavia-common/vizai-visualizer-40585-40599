@@ -132,12 +132,12 @@ function DateRangeSelector({ value, onChange }) {
 function Logo() {
   /**
    * Brand logo + text (single instance).
-   * - 40x40 icon per requirement
+   * - 48x48 icon per requirement
    * - 8px spacing, vertical centering, bold single "VizAI" in brand color
    * - Accessibility: alt, title, and visible text
    * - CSS safeguards against hidden/opacity filters
    */
-  const sizePx = 40; // enforce exact 40x40
+  const sizePx = 48; // enforce exact 48x48
   return (
     <div
       style={{

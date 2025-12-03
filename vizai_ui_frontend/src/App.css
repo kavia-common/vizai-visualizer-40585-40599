@@ -101,10 +101,10 @@
   box-shadow: var(--shadow);
 }
 
-/* Ensure the brand logo image remains visible and sized */
+/* Ensure the brand logo image remains visible and sized - updated to 48x48 */
 .nav img[alt="VizAI Logo"] {
-  width: 40px !important;
-  height: 40px !important;
+  width: 48px !important;
+  height: 48px !important;
   display: inline-block !important;
   object-fit: contain !important;
   opacity: 1 !important;
