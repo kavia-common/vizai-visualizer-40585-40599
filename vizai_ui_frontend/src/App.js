@@ -131,24 +131,30 @@ function DateRangeSelector({ value, onChange }) {
  */
 function Logo() {
   /**
-   * Brand logo + text.
+   * Brand logo + text (single instance).
    * - 24x24 icon left of bold 'VizAI' text
-   * - Text uses brand color #1e8a5b (via --primary) for consistency
+   * - Text uses brand color via --primary (#1e8a5b)
+   * - 8px spacing between icon and text
+   * - Vertically center-aligned with nav items
    */
+  const iconSize =
+    parseInt(
+      getComputedStyle(document.documentElement).getPropertyValue('--brand-icon-size')
+    ) || 24;
   return (
     <div
       style={{
-        display: 'flex',
+        display: 'inline-flex',
         alignItems: 'center',
-        gap: 'var(--brand-gap)',
+        gap: '8px',
         fontWeight: 900,
         lineHeight: 1,
       }}
     >
       <img
         src="/assets/vizai-logo.png"
-        width={parseInt(getComputedStyle(document.documentElement).getPropertyValue('--brand-icon-size')) || 24}
-        height={parseInt(getComputedStyle(document.documentElement).getPropertyValue('--brand-icon-size')) || 24}
+        width={iconSize}
+        height={iconSize}
         alt="VizAI Logo"
         style={{ display: 'block' }}
       />
@@ -216,12 +222,12 @@ function NavBar({ dateRange, setDateRange, showChatTab, species, setSpecies }) {
       <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
         <button
           onClick={onBrandClick}
-          title="Go to Home"
-          aria-label="Go to Home"
+          title="Return to Dashboard"
+          aria-label="VizAI Home"
           style={{
-            display: 'flex',
+            display: 'inline-flex',
             alignItems: 'center',
-            gap: 'var(--brand-gap)',
+            gap: '8px',
             padding: 6,
             borderRadius: 10,
             border: `1px solid transparent`,
