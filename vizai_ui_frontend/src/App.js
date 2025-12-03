@@ -64,6 +64,7 @@ const primaryGhostBtnStyle = {
 };
 
 function Logo() {
+  // Show only the image logo per requirement (remove adjacent brand text).
   const sizePx = 64;
   return (
     <div
@@ -73,7 +74,8 @@ function Logo() {
         alignItems: 'center',
         lineHeight: 1,
         color: 'var(--text)',
-        gap: '8px',
+        /* remove extra horizontal gap since text is gone */
+        gap: 0,
         marginLeft: '16px',
         padding: 0,
       }}
@@ -93,23 +95,6 @@ function Logo() {
         }}
         title="Go to Dashboard"
       />
-      <span
-        className="brand-text"
-        title="VizAI"
-        style={{
-          letterSpacing: 0.2,
-          lineHeight: 1,
-          whiteSpace: 'nowrap',
-          fontWeight: 700,
-          display: 'inline-flex',
-          alignItems: 'center',
-          fontSize: '28px',
-          color: '#1e8a5b',
-        }}
-        aria-label="VizAI"
-      >
-        VizAI
-      </span>
     </div>
   );
 }

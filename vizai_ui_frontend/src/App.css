@@ -118,11 +118,11 @@
   box-shadow: var(--shadow);
 }
 
-/* Brand container and logo/text spacing per updated spec */
+/* Brand container and logo spacing (text removed) */
 .nav .brand {
   display: inline-flex !important;
   align-items: center !important;
-  gap: 8px !important;             /* exact 8px gap between icon and text */
+  gap: 0 !important;               /* no gap since only image remains */
   margin-left: 16px !important;    /* exact 16px from viewport edge */
   padding: 0 !important;
 }
@@ -146,19 +146,7 @@
   mix-blend-mode: normal !important;
 }
 
-/* Brand text: single bold 'VizAI' in brand color at 28px */
-.nav .brand .brand-text {
-  display: inline-flex !important;
-  align-items: center !important;
-  line-height: 1 !important;
-  height: auto !important;
-  font-size: 28px !important;     /* enforce 28px per spec */
-  font-weight: 700 !important;    /* bold */
-  color: #1e8a5b !important;      /* brand color */
-  margin: 0 !important;
-  padding: 0 !important;
-  letter-spacing: 0.2px !important;
-}
+/* Removed brand text styles */
 
 .dropdown {
   background: var(--surface);
