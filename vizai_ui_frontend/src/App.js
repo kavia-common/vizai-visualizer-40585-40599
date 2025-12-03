@@ -131,58 +131,32 @@ function DateRangeSelector({ value, onChange }) {
  */
 function Logo() {
   /**
-   * Brand logo + text (single instance).
-   * - 32x32 icon via CSS variables for flexibility
-   * - 8px spacing, vertical centering, bold single "VizAI" in brand color
-   * - Accessibility: alt, title, and visible text
-   * - CSS safeguards against hidden/opacity filters
+   * Brand logo only (no adjacent text).
+   * - Explicit size 32x32 via CSS variable fallback
+   * - Accessibility: alt and title for tooltip
+   * - CSS safeguards ensure visibility and sizing
    */
   const size = 'var(--brand-icon-size, 32px)';
   return (
-    <div
+    <img
+      src="/assets/vizai-logo.png"
+      alt="VizAI Logo"
+      width={32}
+      height={32}
+      title="Return to Dashboard"
+      aria-hidden={false}
       style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: 'var(--brand-gap, 8px)',
-        fontWeight: 900,
-        lineHeight: 1,
-        color: 'var(--text)',
+        display: 'inline-block',
+        width: size,
+        height: size,
+        objectFit: 'contain',
+        filter: 'none',
+        opacity: 1,
+        visibility: 'visible',
+        maxWidth: 'none',
+        maxHeight: 'none',
       }}
-      aria-label="VizAI brand"
-    >
-      <img
-        src="/assets/vizai-logo.png"        /* Public path asset */
-        alt="VizAI Logo"
-        width={32}
-        height={32}
-        title="Return to Dashboard"
-        aria-hidden={false}
-        style={{
-          display: 'block',
-          width: size,
-          height: size,
-          objectFit: 'contain',
-          filter: 'none',
-          opacity: 1,
-          visibility: 'visible',
-          maxWidth: 'none',
-          maxHeight: 'none',
-        }}
-      />
-      <span
-        title="VizAI"
-        style={{
-          color: 'var(--primary)',           /* brand color */
-          fontSize: 'var(--brand-text-size)',
-          letterSpacing: 0.25,
-          lineHeight: 1,
-          whiteSpace: 'nowrap',
-          fontWeight: 900,
-        }}
-      >
-        VizAI
-      </span>
-    </div>
+    />
   );
 }
 
