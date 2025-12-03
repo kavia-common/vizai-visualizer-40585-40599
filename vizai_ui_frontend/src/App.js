@@ -582,6 +582,59 @@ function DashboardPage() {
     return `${name}: ${hh}h ${String(mm).padStart(2, '0')}m (${pct}% of day)`;
   };
 
+  // Additional helpers for new chart views
+
+  // PUBLIC_INTERFACE
+  function formatHhMm(mins) {
+    /** Returns "Hh MMm" per spec for tooltips and labels */
+    const h = Math.floor((mins || 0) / 60);
+    const m = (mins || 0) % 60;
+    return `${h}h ${String(m).padStart(2, '0')}m`;
+  }
+
+  // Color palettes using theme variables for accessible contrast
+  const piePalette = [
+    themeTokens.primary,
+    themeTokens.secondary,
+    '#0EA5E9', // sky-500 tint for variation
+    '#22C55E', // green-500
+    '#F43F5E', // rose-500
+    themeTokens.primary600,
+  ];
+  const barPalette = [
+    themeTokens.primary,
+    themeTokens.secondary,
+    '#10B981', // emerald-500
+    '#6366F1', // indigo-500
+    '#F59E0B', // amber-500
+    themeTokens.primary600,
+  ];
+
+  function pieColor(i) {
+    return piePalette[i % piePalette.length];
+  }
+  function barColor(i) {
+    return barPalette[i % barPalette.length];
+  }
+
+  // Build a CSS conic-gradient string from data proportions for the pie
+  // Example output: 'conic-gradient(color1 0 20%, color2 20% 45%, ...)'
+  function conicGradientFromData(keys, dataMap, total) {
+    let acc = 0;
+    const parts = [];
+    keys.forEach((k, idx) => {
+      const mins = dataMap[k] || 0;
+      const frac = total ? mins / total : 0;
+      const start = acc * 100;
+      const end = (acc + frac) * 100;
+      const color = pieColor(idx);
+      parts.push(`${color} ${start}% ${end}%`);
+      acc += frac;
+    });
+    // Fallback to primary color when no data
+    return parts.length ? `conic-gradient(${parts.join(', ')})` : themeTokens.primary;
+  }
+
   return (
     <AuthedLayout>
       <div style={{ display: 'grid', gap: 16 }}>
@@ -613,9 +666,10 @@ function DashboardPage() {
 
           {/* Behavior Duration section with new taxonomy */}
           <ChartBlock title="Behavior Duration">
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, gap: 8 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, gap: 8, alignItems: 'center' }}>
               <div style={{ color: 'var(--muted)', fontSize: 12 }}>View</div>
-              <div style={{ display: 'flex', gap: 8 }}>
+              <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+                {/* Toggle labels per spec: Count, Duration, Pie, Stacked Bar */}
                 <button
                   style={{ ...primaryGhostBtnStyle, background: durationMode === 'count' ? 'rgba(30,138,91,0.12)' : 'transparent' }}
                   onClick={() => setDurationMode('count')}
@@ -632,46 +686,142 @@ function DashboardPage() {
                 </button>
                 <button
                   style={{ ...primaryGhostBtnStyle, background: pieMode ? 'rgba(59,130,246,0.12)' : 'transparent' }}
-                  onClick={() => setPieMode(v => !v)}
-                  title="Toggle stacked/pie"
+                  onClick={() => setPieMode(true)}
+                  title="Pie chart view"
                 >
-                  {pieMode ? 'Pie' : 'Stacked'}
+                  Pie
+                </button>
+                <button
+                  style={{ ...primaryGhostBtnStyle, background: !pieMode ? 'rgba(59,130,246,0.12)' : 'transparent' }}
+                  onClick={() => setPieMode(false)}
+                  title="Stacked bar view"
+                >
+                  Stacked Bar
                 </button>
               </div>
             </div>
+            {/* Helper text near toggles */}
+            <div style={{ color: 'var(--muted)', fontSize: 12, marginBottom: 8 }}>
+              Switch between Pie and Stacked Bar to visualize behavior duration as percentages or cumulative time.
+            </div>
+
             {durationMode === 'count' ? (
               <EmptyState title="Count mode" description="Showing distribution by event count (mocked)." />
             ) : totalDuration === 0 ? (
               <EmptyState title="No behavior duration data available for this period." description="" />
             ) : (
-              <div style={{ display: 'grid', gap: 8 }}>
-                {BEHAVIOR_CATEGORIES.map(b => (
-                  <div key={b} style={{ display: 'grid', gap: 6 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#9CA3AF' }}>
-                      <span title={fmtTooltip(b)}>{b}</span>
-                      <span title={fmtTooltip(b)}>
-                        {(() => {
-                          const mins = mockDurations[b] || 0;
-                          const hh = Math.floor(mins / 60);
-                          const mm = mins % 60;
-                          return `${hh}h ${String(mm).padStart(2, '0')}m`;
-                        })()}
-                      </span>
+              <>
+                {/* Titles per view */}
+                <div style={{ fontWeight: 800, marginBottom: 6 }}>
+                  {pieMode ? 'Behavior Duration – Pie View' : 'Behavior Duration – Stacked Bar View'}
+                </div>
+
+                {pieMode ? (
+                  /* Pie View (mocked, accessible, using CSS with theme vars) */
+                  <div role="img" aria-label="Pie chart of behavior duration percentages"
+                       style={{ display: 'grid', gap: 8 }}>
+                    {/* Legend */}
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                      {BEHAVIOR_CATEGORIES.map((b, idx) => {
+                        const mins = mockDurations[b] || 0;
+                        const pct = totalDuration ? Math.round((mins / totalDuration) * 100) : 0;
+                        const color = pieColor(idx);
+                        return (
+                          <div key={b} title={`${b}: ${formatHhMm(mins)} (${pct}%)`}
+                               style={{ display: 'inline-flex', alignItems: 'center', gap: 6, border: `1px solid ${themeTokens.border}`, padding: '6px 8px', borderRadius: 10, background: 'var(--surface)' }}>
+                            <span aria-hidden style={{ width: 10, height: 10, borderRadius: 999, background: color, boxShadow: themeTokens.shadow }} />
+                            <span style={{ fontSize: 12, color: themeTokens.text }}>{b}</span>
+                          </div>
+                        );
+                      })}
                     </div>
-                    <div style={{
-                      height: 10, background: 'var(--table-row-hover)', border: `1px solid ${themeTokens.border}`, borderRadius: 999, overflow: 'hidden'
-                    }}>
-                      <div
-                        title={fmtTooltip(b)}
-                        style={{
-                          width: `${((mockDurations[b] || 0) / Math.max(1, totalDuration)) * 100}%`,
-                          background: themeTokens.gradient, height: '100%'
-                        }}
-                      />
+
+                    {/* Simple "pie" representation using a conic gradient */}
+                    <div
+                      style={{
+                        width: 240,
+                        height: 240,
+                        borderRadius: '50%',
+                        border: `1px solid ${themeTokens.border}`,
+                        boxShadow: themeTokens.shadow,
+                        background: conicGradientFromData(BEHAVIOR_CATEGORIES, mockDurations, totalDuration),
+                        margin: '8px auto'
+                      }}
+                      title="Pie chart"
+                    />
+
+                    {/* Accessible textual breakdown with tooltips exactly formatted */}
+                    <div style={{ display: 'grid', gap: 4 }}>
+                      {BEHAVIOR_CATEGORIES.map((b) => {
+                        const mins = mockDurations[b] || 0;
+                        const pct = totalDuration ? Math.round((mins / totalDuration) * 100) : 0;
+                        return (
+                          <div key={b} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#6B7280' }}>
+                            <span>{b}</span>
+                            <span title={`${b}: ${formatHhMm(mins)} (${pct}%)`}>{`${formatHhMm(mins)} (${pct}%)`}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Helper text */}
+                    <div style={{ color: 'var(--muted)', fontSize: 12, marginTop: 4 }}>
+                      Pie chart shows percentage of total time spent in each behavior.
                     </div>
                   </div>
-                ))}
-              </div>
+                ) : (
+                  /* Stacked Bar View */
+                  <div role="img" aria-label="Stacked bar chart of behavior duration in hours"
+                       style={{ display: 'grid', gap: 8 }}>
+                    {/* Axes labels */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--muted)' }}>
+                      <span>Behaviors</span>
+                      <span>Time (Hours)</span>
+                    </div>
+
+                    {/* One horizontal stacked bar representing cumulative distribution */}
+                    <div style={{
+                      height: 20,
+                      background: 'var(--table-row-hover)',
+                      border: `1px solid ${themeTokens.border}`,
+                      borderRadius: 999,
+                      overflow: 'hidden',
+                      display: 'flex'
+                    }}
+                      title="Cumulative time distribution across behaviors"
+                    >
+                      {BEHAVIOR_CATEGORIES.map((b, idx) => {
+                        const mins = mockDurations[b] || 0;
+                        const widthPct = totalDuration ? (mins / totalDuration) * 100 : 0;
+                        const color = barColor(idx);
+                        return (
+                          <div
+                            key={b}
+                            style={{ width: `${widthPct}%`, background: color }}
+                            title={`${b}: ${formatHhMm(mins)}`}
+                            aria-label={`${b}: ${formatHhMm(mins)}`}
+                          />
+                        );
+                      })}
+                    </div>
+
+                    {/* Legend with exact labels */}
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                      {BEHAVIOR_CATEGORIES.map((b, idx) => (
+                        <div key={b} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, border: `1px solid ${themeTokens.border}`, padding: '6px 8px', borderRadius: 10, background: 'var(--surface)' }}>
+                          <span aria-hidden style={{ width: 10, height: 10, borderRadius: 2, background: barColor(idx), boxShadow: themeTokens.shadow }} />
+                          <span style={{ fontSize: 12, color: themeTokens.text }}>{b}</span>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Helper text */}
+                    <div style={{ color: 'var(--muted)', fontSize: 12 }}>
+                      Stacked bar chart shows cumulative time distribution across behaviors.
+                    </div>
+                  </div>
+                )}
+              </>
             )}
           </ChartBlock>
 
