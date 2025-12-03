@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState, createContext, useContext, useRef } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, Link, useLocation, useNavigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import './index.css';
 import './App.css';
 
@@ -37,7 +37,7 @@ const featureFlags = (() => {
 
 /**
  * PUBLIC_INTERFACE
- * AuthContext simulates signed-in state for route guarding
+ * AuthContext simulates signed-in state for route guarding and stores role/species/date preferences
  */
 const AuthContext = createContext(null);
 
@@ -162,9 +162,9 @@ function Logo() {
 
 /**
  * PUBLIC_INTERFACE
- * NavBar with logo, species dropdown, tabs, date selector, user menu
+ * NavBar: Logo, Tabs, User badge (Species/Date moved to left panel per requirement)
  */
-function NavBar({ dateRange, setDateRange, showChatTab, species, setSpecies }) {
+function NavBar({ showChatTab }) {
   const location = useLocation();
   const navigate = useNavigate();
   const { authed } = useAuth();
@@ -183,7 +183,6 @@ function NavBar({ dateRange, setDateRange, showChatTab, species, setSpecies }) {
   });
 
   const onBrandClick = () => {
-    // Navigate to Animal Selection if unauthenticated, otherwise Dashboard
     if (!authed) {
       navigate('/select-animal');
       return;
@@ -191,7 +190,6 @@ function NavBar({ dateRange, setDateRange, showChatTab, species, setSpecies }) {
     navigate('/dashboard');
   };
 
-  // Alert badge (mock) for Alerts tab
   const alertsBadge = (
     <span aria-label="notifications" style={{
       position: 'absolute', top: -4, right: -4,
@@ -228,26 +226,6 @@ function NavBar({ dateRange, setDateRange, showChatTab, species, setSpecies }) {
           <Logo />
           <span className="sr-only">VizAI Home</span>
         </button>
-        <div style={{ height: 24, width: 1, background: themeTokens.border }} />
-        <label style={{ color: 'var(--muted)', fontSize: 12 }} title="Choose species to filter views">Species</label>
-        <select
-          aria-label="Species"
-          value={species}
-          onChange={(e) => setSpecies(e.target.value)}
-          style={{
-            background: 'var(--surface)',
-            color: themeTokens.text,
-            border: `1px solid ${themeTokens.border}`,
-            borderRadius: 12,
-            padding: '8px 12px',
-            fontWeight: 700,
-            boxShadow: themeTokens.shadow
-          }}
-        >
-          <option value="Giant Anteater">Giant Anteater</option>
-          <option value="Pangolin" disabled>pangolin (Coming Soon)</option>
-          <option value="Sloth" disabled>sloth (Coming Soon)</option>
-        </select>
 
         <div style={{ marginLeft: 8, display: 'flex', gap: 4 }}>
           <Link to="/dashboard" style={tabStyle(isActive('/dashboard'))} title="Overview metrics">
@@ -277,13 +255,6 @@ function NavBar({ dateRange, setDateRange, showChatTab, species, setSpecies }) {
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-        <DateRangeSelector value={dateRange} onChange={setDateRange} />
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <StatusBadge status="Active" />
-          <div title="Keyboard: ? for tips" style={{
-            padding: '6px 10px', borderRadius: 999, border: `1px dashed ${themeTokens.border}`, color: 'var(--muted)', fontSize: 12
-          }}>Tips: Press ?</div>
-        </div>
         <div style={{
           display: 'inline-flex', alignItems: 'center', gap: 8, padding: '8px 10px',
           border: `1px solid ${themeTokens.border}`, borderRadius: 12, background: 'var(--surface)', boxShadow: themeTokens.shadow
@@ -467,12 +438,133 @@ const controlBtnStyle = {
 };
 
 /**
- * Pages
+ * Shared constants
  */
+const BEHAVIOR_CATEGORIES = [
+  'Recumbent',
+  'Non-Recumbent',
+  'Scratching',
+  'Self-Directed',
+  'Pacing',
+  'Moving',
+];
+
+const inputStyle = {
+  width: '100%',
+  background: 'var(--surface)',
+  border: `1px solid ${themeTokens.border}`,
+  color: themeTokens.text,
+  padding: '10px 12px',
+  borderRadius: 12,
+  margin: '8px 0 14px',
+  boxShadow: themeTokens.shadow,
+};
+
+/**
+ * Left panel component used on authed pages: includes Species and Date Range per requirement.
+ */
+function LeftPanelFilters({ species, setSpecies, dateRange, setDateRange, extraChildren }) {
+  return (
+    <div style={{ display: 'grid', gap: 16 }}>
+      <div className="card" style={{ padding: 16, borderRadius: 16 }}>
+        <div style={{ fontWeight: 800, marginBottom: 10 }}>Global Filters</div>
+        <div style={{ display: 'grid', gap: 12 }}>
+          <div>
+            <label style={{ fontSize: 12, color: 'var(--muted)', fontWeight: 700 }}>Species</label>
+            <select
+              aria-label="Species"
+              value={species}
+              onChange={(e) => setSpecies(e.target.value)}
+              style={{
+                width: '100%',
+                background: 'var(--surface)',
+                color: themeTokens.text,
+                border: `1px solid ${themeTokens.border}`,
+                borderRadius: 12,
+                padding: '8px 12px',
+                fontWeight: 700,
+                boxShadow: themeTokens.shadow,
+                marginTop: 6
+              }}
+            >
+              <option value="Giant Anteater">Giant Anteater</option>
+              <option value="Pangolin" disabled>pangolin (Coming Soon)</option>
+              <option value="Sloth" disabled>sloth (Coming Soon)</option>
+            </select>
+          </div>
+          <div>
+            <DateRangeSelector value={dateRange} onChange={setDateRange} />
+          </div>
+        </div>
+      </div>
+      {extraChildren}
+    </div>
+  );
+}
+
+/**
+ * PUBLIC_INTERFACE
+ * RegistrationPage visible field for Role; after login role hidden but used internally.
+ */
+function RegistrationPage() {
+  const navigate = useNavigate();
+  const { setAuthed, setUser } = useAuth();
+  const [error, setError] = useState('');
+
+  // PUBLIC_INTERFACE
+  // Role options used in registration only
+  const ROLES = ['Researcher', 'Staff', 'Admin'];
+
+  const onSubmit = (e) => {
+    e.preventDefault();
+    const fd = new FormData(e.currentTarget);
+    const email = String(fd.get('email') || '');
+    const password = String(fd.get('password') || '');
+    const role = String(fd.get('role') || '');
+    if (!email || !password || !role) {
+      setError('Please enter a valid email, password, and role.');
+      return;
+    }
+    // Persist in context (mock). Role is used internally but not shown post-login.
+    setUser({ email, role });
+    setAuthed(true);
+    navigate('/select-animal', { replace: true });
+  };
+
+  return (
+    <div style={{ minHeight: '100vh', background: themeTokens.background, color: themeTokens.text, display: 'grid', placeItems: 'center', padding: 24 }}>
+      <form onSubmit={onSubmit} style={{
+        width: 'min(100%, 460px)', background: themeTokens.surface, border: `1px solid ${themeTokens.border}`, borderRadius: 16, padding: 24, boxShadow: themeTokens.shadow
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
+          <Logo />
+        </div>
+        <div className="title" style={{ textAlign: 'center', fontWeight: 900, marginBottom: 6 }}>Create your VizAI Account</div>
+        <div className="subtitle" style={{ textAlign: 'center', color: 'var(--muted)', marginBottom: 20 }}>
+          Register to access dashboards, timeline, and reports.
+        </div>
+        <label style={{ fontWeight: 700, fontSize: 12, color: '#9CA3AF' }}>Email</label>
+        <input name="email" type="email" placeholder="name@research.org" style={inputStyle} />
+        <label style={{ fontWeight: 700, fontSize: 12, color: '#9CA3AF' }}>Password</label>
+        <input name="password" type="password" placeholder="••••••••" style={inputStyle} />
+        <label style={{ fontWeight: 700, fontSize: 12, color: '#9CA3AF' }}>Role</label>
+        <select name="role" style={{ ...inputStyle, marginTop: 6 }}>
+          <option value="">Select role…</option>
+          {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
+        </select>
+        {error ? <ErrorState message={error} /> : null}
+        <button type="submit" style={{ ...primaryBtnStyle, width: '100%', marginTop: 12 }}>Register</button>
+        <div style={{ marginTop: 12, color: '#9CA3AF', fontSize: 12, textAlign: 'center' }}>
+          By registering you agree to our research-friendly terms.
+        </div>
+      </form>
+    </div>
+  );
+}
 
 // PUBLIC_INTERFACE
 function LoginPage() {
-  const { setAuthed } = useAuth();
+  const { setAuthed, setUser } = useAuth();
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
@@ -486,6 +578,8 @@ function LoginPage() {
       return;
     }
     setError('');
+    // Login uses stored role internally if available; do not prompt for role here
+    setUser((prev) => prev?.role ? { ...(prev || {}), email } : { email, role: 'Researcher' });
     setAuthed(true);
     navigate('/select-animal', { replace: true });
   };
@@ -508,6 +602,9 @@ function LoginPage() {
         <input name="password" type="password" placeholder="••••••••" style={inputStyle} />
         {error ? <ErrorState message={error} /> : null}
         <button type="submit" style={{ ...primaryBtnStyle, width: '100%', marginTop: 12 }}>Sign In</button>
+        <div style={{ marginTop: 10, textAlign: 'center' }}>
+          <Link to="/register" title="Create account">No account? Create one</Link>
+        </div>
         <div style={{ marginTop: 12, color: '#9CA3AF', fontSize: 12, textAlign: 'center' }}>
           By continuing you agree to our research-friendly terms.
         </div>
@@ -516,18 +613,10 @@ function LoginPage() {
   );
 }
 
-const inputStyle = {
-  width: '100%',
-  background: 'var(--surface)',
-  border: `1px solid ${themeTokens.border}`,
-  color: themeTokens.text,
-  padding: '10px 12px',
-  borderRadius: 12,
-  margin: '8px 0 14px',
-  boxShadow: themeTokens.shadow,
-};
-
-// PUBLIC_INTERFACE
+/**
+ * PUBLIC_INTERFACE
+ * Animal selection remains unchanged.
+ */
 function AnimalSelectPage() {
   return (
     <AuthedLayout>
@@ -572,25 +661,16 @@ function Card({ title, description, active, disabled }) {
   );
 }
 
-// PUBLIC_INTERFACE
+/**
+ * PUBLIC_INTERFACE
+ * Dashboard with interactive pie/stacked legend to navigate to Timeline with filter
+ */
 function DashboardPage() {
   const [openVideo, setOpenVideo] = useState(false);
 
-  // New behavior taxonomy used across the app
-  const BEHAVIOR_CATEGORIES = [
-    'Recumbent',
-    'Non-Recumbent',
-    'Scratching',
-    'Self-Directed',
-    'Pacing',
-    'Moving',
-  ];
-
-  // Mock dataset replacements to include all six categories
   const [durationMode, setDurationMode] = useState('duration'); // count|duration
   const [pieMode, setPieMode] = useState(true); // stacked/pie toggle (mocked)
 
-  // Mock counts for Behavior Count chart (kept functional but taxonomy-aligned)
   const mockCounts = {
     'Recumbent': 22,
     'Non-Recumbent': 15,
@@ -601,70 +681,44 @@ function DashboardPage() {
   };
   const totalCount = BEHAVIOR_CATEGORIES.reduce((sum, k) => sum + (mockCounts[k] || 0), 0);
 
-  // Mock durations (minutes) for Behavior Duration chart
   const mockDurations = {
-    'Recumbent': 485,       // 8h05m
-    'Non-Recumbent': 210,   // 3h30m
-    'Scratching': 35,       // 0h35m
-    'Self-Directed': 65,    // 1h05m
-    'Pacing': 40,           // 0h40m
-    'Moving': 205,          // 3h25m
+    'Recumbent': 485,
+    'Non-Recumbent': 210,
+    'Scratching': 35,
+    'Self-Directed': 65,
+    'Pacing': 40,
+    'Moving': 205,
   };
-
-  // Total minutes in the mocked "day"
   const totalDuration = BEHAVIOR_CATEGORIES.reduce((sum, k) => sum + (mockDurations[k] || 0), 0);
 
-  // Helper for tooltip formatting "Name: 8h 45m (34% of day)"
-  const fmtTooltip = (name) => {
-    const mins = mockDurations[name] || 0;
-    const hh = Math.floor(mins / 60);
-    const mm = mins % 60;
-    const pct = totalDuration > 0 ? Math.round((mins / totalDuration) * 100) : 0;
-    return `${name}: ${hh}h ${String(mm).padStart(2, '0')}m (${pct}% of day)`;
-  };
-
-  // Additional helpers for new chart views
-
-  // PUBLIC_INTERFACE
   function formatHhMm(mins) {
-    /** Returns "Hh MMm" per spec for tooltips and labels */
     const h = Math.floor((mins || 0) / 60);
     const m = (mins || 0) % 60;
     return `${h}h ${String(m).padStart(2, '0')}m`;
   }
-
-  // Color palettes using theme variables for accessible contrast
   const piePalette = [
     themeTokens.primary,
     themeTokens.secondary,
-    '#0EA5E9', // sky-500 tint for variation
-    '#22C55E', // green-500
-    '#F43F5E', // rose-500
+    '#0EA5E9',
+    '#22C55E',
+    '#F43F5E',
     themeTokens.primary600,
   ];
   const barPalette = [
     themeTokens.primary,
     themeTokens.secondary,
-    '#10B981', // emerald-500
-    '#6366F1', // indigo-500
-    '#F59E0B', // amber-500
+    '#10B981',
+    '#6366F1',
+    '#F59E0B',
     themeTokens.primary600,
   ];
-
-  function pieColor(i) {
-    return piePalette[i % piePalette.length];
-  }
-  function barColor(i) {
-    return barPalette[i % barPalette.length];
-  }
-
-  // Build a CSS conic-gradient string from data proportions for the pie
-  // Example output: 'conic-gradient(color1 0 20%, color2 20% 45%, ...)'
+  function pieColor(i) { return piePalette[i % piePalette.length]; }
+  function barColor(i) { return barPalette[i % barPalette.length]; }
   function conicGradientFromData(keys, dataMap, total) {
     let acc = 0;
     const parts = [];
     keys.forEach((k, idx) => {
-      const mins = dataMap[k] || 0;
+      const mins = (dataMap[k] || 0);
       const frac = total ? mins / total : 0;
       const start = acc * 100;
       const end = (acc + frac) * 100;
@@ -672,9 +726,11 @@ function DashboardPage() {
       parts.push(`${color} ${start}% ${end}%`);
       acc += frac;
     });
-    // Fallback to primary color when no data
     return parts.length ? `conic-gradient(${parts.join(', ')})` : themeTokens.primary;
   }
+
+  const navigate = useNavigate();
+  const onPieClick = () => navigate('/timeline?behavior=Moving');
 
   return (
     <AuthedLayout>
@@ -705,12 +761,10 @@ function DashboardPage() {
             )}
           </ChartBlock>
 
-          {/* Behavior Duration section with new taxonomy */}
           <ChartBlock title="Behavior Duration">
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, gap: 8, alignItems: 'center' }}>
               <div style={{ color: 'var(--muted)', fontSize: 12 }}>View</div>
               <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
-                {/* Toggle labels per spec: Count, Duration, Pie, Stacked Bar */}
                 <button
                   style={{ ...primaryGhostBtnStyle, background: durationMode === 'count' ? 'rgba(30,138,91,0.12)' : 'transparent' }}
                   onClick={() => setDurationMode('count')}
@@ -741,10 +795,6 @@ function DashboardPage() {
                 </button>
               </div>
             </div>
-            {/* Helper text near toggles */}
-            <div style={{ color: 'var(--muted)', fontSize: 12, marginBottom: 8 }}>
-              Switch between Pie and Stacked Bar to visualize behavior duration as percentages or cumulative time.
-            </div>
 
             {durationMode === 'count' ? (
               <EmptyState title="Count mode" description="Showing distribution by event count (mocked)." />
@@ -752,33 +802,32 @@ function DashboardPage() {
               <EmptyState title="No behavior duration data available for this period." description="" />
             ) : (
               <>
-                {/* Titles per view */}
                 <div style={{ fontWeight: 800, marginBottom: 6 }}>
                   {pieMode ? 'Behavior Duration – Pie View' : 'Behavior Duration – Stacked Bar View'}
                 </div>
 
                 {pieMode ? (
-                  /* Pie View (mocked, accessible, using CSS with theme vars) */
                   <div role="img" aria-label="Pie chart of behavior duration percentages"
                        style={{ display: 'grid', gap: 8 }}>
-                    {/* Legend */}
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                       {BEHAVIOR_CATEGORIES.map((b, idx) => {
                         const mins = mockDurations[b] || 0;
                         const pct = totalDuration ? Math.round((mins / totalDuration) * 100) : 0;
                         const color = pieColor(idx);
                         return (
-                          <div key={b} title={`${b}: ${formatHhMm(mins)} (${pct}%)`}
-                               style={{ display: 'inline-flex', alignItems: 'center', gap: 6, border: `1px solid ${themeTokens.border}`, padding: '6px 8px', borderRadius: 10, background: 'var(--surface)' }}>
+                          <button key={b}
+                                  onClick={() => navigate(`/timeline?behavior=${encodeURIComponent(b)}`)}
+                                  title={`${b}: ${formatHhMm(mins)} (${pct}%) • Click to view in Timeline`}
+                                  style={{ display: 'inline-flex', alignItems: 'center', gap: 6, border: `1px solid ${themeTokens.border}`, padding: '6px 8px', borderRadius: 10, background: 'var(--surface)', cursor: 'pointer' }}>
                             <span aria-hidden style={{ width: 10, height: 10, borderRadius: 999, background: color, boxShadow: themeTokens.shadow }} />
                             <span style={{ fontSize: 12, color: themeTokens.text }}>{b}</span>
-                          </div>
+                          </button>
                         );
                       })}
                     </div>
 
-                    {/* Simple "pie" representation using a conic gradient */}
                     <div
+                      onClick={onPieClick}
                       style={{
                         width: 240,
                         height: 240,
@@ -786,41 +835,15 @@ function DashboardPage() {
                         border: `1px solid ${themeTokens.border}`,
                         boxShadow: themeTokens.shadow,
                         background: conicGradientFromData(BEHAVIOR_CATEGORIES, mockDurations, totalDuration),
-                        margin: '8px auto'
+                        margin: '8px auto',
+                        cursor: 'pointer'
                       }}
-                      title="Pie chart"
+                      title="Pie chart (click to open Timeline with filter)"
                     />
-
-                    {/* Accessible textual breakdown with tooltips exactly formatted */}
-                    <div style={{ display: 'grid', gap: 4 }}>
-                      {BEHAVIOR_CATEGORIES.map((b) => {
-                        const mins = mockDurations[b] || 0;
-                        const pct = totalDuration ? Math.round((mins / totalDuration) * 100) : 0;
-                        return (
-                          <div key={b} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#6B7280' }}>
-                            <span>{b}</span>
-                            <span title={`${b}: ${formatHhMm(mins)} (${pct}%)`}>{`${formatHhMm(mins)} (${pct}%)`}</span>
-                          </div>
-                        );
-                      })}
-                    </div>
-
-                    {/* Helper text */}
-                    <div style={{ color: 'var(--muted)', fontSize: 12, marginTop: 4 }}>
-                      Pie chart shows percentage of total time spent in each behavior.
-                    </div>
                   </div>
                 ) : (
-                  /* Stacked Bar View */
                   <div role="img" aria-label="Stacked bar chart of behavior duration in hours"
                        style={{ display: 'grid', gap: 8 }}>
-                    {/* Axes labels */}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--muted)' }}>
-                      <span>Behaviors</span>
-                      <span>Time (Hours)</span>
-                    </div>
-
-                    {/* One horizontal stacked bar representing cumulative distribution */}
                     <div style={{
                       height: 20,
                       background: 'var(--table-row-hover)',
@@ -841,24 +864,10 @@ function DashboardPage() {
                             style={{ width: `${widthPct}%`, background: color }}
                             title={`${b}: ${formatHhMm(mins)}`}
                             aria-label={`${b}: ${formatHhMm(mins)}`}
+                            onClick={() => navigate(`/timeline?behavior=${encodeURIComponent(b)}`)}
                           />
                         );
                       })}
-                    </div>
-
-                    {/* Legend with exact labels */}
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                      {BEHAVIOR_CATEGORIES.map((b, idx) => (
-                        <div key={b} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, border: `1px solid ${themeTokens.border}`, padding: '6px 8px', borderRadius: 10, background: 'var(--surface)' }}>
-                          <span aria-hidden style={{ width: 10, height: 10, borderRadius: 2, background: barColor(idx), boxShadow: themeTokens.shadow }} />
-                          <span style={{ fontSize: 12, color: themeTokens.text }}>{b}</span>
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Helper text */}
-                    <div style={{ color: 'var(--muted)', fontSize: 12 }}>
-                      Stacked bar chart shows cumulative time distribution across behaviors.
                     </div>
                   </div>
                 )}
@@ -901,82 +910,75 @@ function ChartBlock({ title, children }) {
   );
 }
 
-// PUBLIC_INTERFACE
+/**
+ * PUBLIC_INTERFACE
+ * Timeline supports behavior filter via query param and shows left panel with species/date
+ */
 function TimelinePage() {
   const [view, setView] = useState('grid');
   const [zoom, setZoom] = useState(100);
-  const [count] = useState(12);
+  const [count, setCount] = useState(12);
   const [openVideo, setOpenVideo] = useState(false);
+  const [searchParams] = useSearchParams();
+  const initialBehavior = searchParams.get('behavior') || 'All';
+
   return (
     <AuthedLayout>
-      <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: 16 }}>
-        <FiltersPanel />
-        <div style={{ display: 'grid', gap: 12 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div style={{ color: '#9CA3AF' }}>{count} results</div>
-            <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, alignItems: 'center' }}>
-              <button style={controlBtnStyle} onClick={() => setZoom(z => Math.max(25, z - 25))} title="Zoom out">-</button>
-              <div style={{ minWidth: 48, textAlign: 'center' }}>{zoom}%</div>
-              <button style={controlBtnStyle} onClick={() => setZoom(z => Math.min(200, z + 25))} title="Zoom in">+</button>
-              <button style={{ ...primaryGhostBtnStyle, background: view === 'grid' ? 'rgba(52,211,153,0.12)' : 'transparent' }} onClick={() => setView('grid')}>Grid</button>
-              <button style={{ ...primaryGhostBtnStyle, background: view === 'list' ? 'rgba(52,211,153,0.12)' : 'transparent' }} onClick={() => setView('list')}>List</button>
-            </div>
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: view === 'grid' ? 'repeat(auto-fill, minmax(240px,1fr))' : '1fr', gap: 12 }}>
-            {Array.from({ length: count }).map((_, i) => (
-              <BehaviorEventCard key={i} onOpenVideo={() => setOpenVideo(true)} />
-            ))}
-          </div>
-        </div>
-      </div>
-      <VideoModal open={openVideo} onClose={() => setOpenVideo(false)} />
+      <TimelineWithLeftPanel initialBehavior={initialBehavior} view={view} setView={setView} zoom={zoom} setZoom={setZoom} count={count} setCount={setCount} openVideo={openVideo} setOpenVideo={setOpenVideo} />
     </AuthedLayout>
   );
 }
 
-function FiltersPanel() {
-  // Consistent behavior set for Timeline filters
-  const BEHAVIOR_CATEGORIES = [
-    'Recumbent',
-    'Non-Recumbent',
-    'Scratching',
-    'Self-Directed',
-    'Pacing',
-    'Moving',
-  ];
+function TimelineWithLeftPanel({ initialBehavior, view, setView, zoom, setZoom, count, setCount, openVideo, setOpenVideo }) {
+  const { species, setSpecies, dateRange, setDateRange } = useAuth();
+  const [behaviorFilter, setBehaviorFilter] = useState(initialBehavior);
+
+  useEffect(() => {
+    // mock re-count when behavior changes
+    setCount(behaviorFilter === 'All' ? 12 : 7);
+  }, [behaviorFilter, setCount]);
+
   return (
-    <div className="card" style={{
-      borderRadius: 16, padding: 16, height: 'fit-content'
-    }}>
-      <div style={{ fontWeight: 800, marginBottom: 10 }}>Filters</div>
-      <div style={{ display: 'grid', gap: 10 }}>
-        <div>
-          <label style={filterLabel}>Behavior Type</label>
-          <select style={selectStyle} aria-label="Behavior Type">
-            <option>All</option>
-            {BEHAVIOR_CATEGORIES.map(c => (
-              <option key={c}>{c}</option>
-            ))}
-          </select>
+    <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: 16 }}>
+      <LeftPanelFilters species={species} setSpecies={setSpecies} dateRange={dateRange} setDateRange={setDateRange}
+        extraChildren={
+          <div className="card" style={{ padding: 16, borderRadius: 16 }}>
+            <div style={{ fontWeight: 800, marginBottom: 10 }}>Timeline Filters</div>
+            <div>
+              <label style={{ fontSize: 12, color: 'var(--muted)', fontWeight: 700 }}>Behavior Type</label>
+              <select style={selectStyle} aria-label="Behavior Type" value={behaviorFilter} onChange={(e) => setBehaviorFilter(e.target.value)}>
+                <option>All</option>
+                {BEHAVIOR_CATEGORIES.map(c => (
+                  <option key={c}>{c}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+        }
+      />
+      <div style={{ display: 'grid', gap: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ color: '#9CA3AF' }}>{count} results</div>
+          <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, alignItems: 'center' }}>
+            <button style={controlBtnStyle} onClick={() => setZoom(z => Math.max(25, z - 25))} title="Zoom out">-</button>
+            <div style={{ minWidth: 48, textAlign: 'center' }}>{zoom}%</div>
+            <button style={controlBtnStyle} onClick={() => setZoom(z => Math.min(200, z + 25))} title="Zoom in">+</button>
+            <button style={{ ...primaryGhostBtnStyle, background: view === 'grid' ? 'rgba(52,211,153,0.12)' : 'transparent' }} onClick={() => setView('grid')}>Grid</button>
+            <button style={{ ...primaryGhostBtnStyle, background: view === 'list' ? 'rgba(52,211,153,0.12)' : 'transparent' }} onClick={() => setView('list')}>List</button>
+          </div>
         </div>
-        <div>
-          <label style={filterLabel}>Confidence</label>
-          <input type="range" min="0" max="100" defaultValue="80" style={{ width: '100%' }} />
-        </div>
-        <div>
-          <label style={filterLabel}>Video Only</label>
-          <input type="checkbox" />
-        </div>
-        <div>
-          <label style={filterLabel}>Annotations</label>
-          <input type="checkbox" defaultChecked />
+
+        <div style={{ display: 'grid', gridTemplateColumns: view === 'grid' ? 'repeat(auto-fill, minmax(240px,1fr))' : '1fr', gap: 12 }}>
+          {Array.from({ length: count }).map((_, i) => (
+            <BehaviorEventCard key={i} onOpenVideo={() => setOpenVideo(true)} />
+          ))}
         </div>
       </div>
+      <VideoModal open={openVideo} onClose={() => setOpenVideo(false)} />
     </div>
   );
 }
-const filterLabel = { fontSize: 12, color: 'var(--muted)', fontWeight: 700 };
+
 const selectStyle = {
   width: '100%',
   background: 'var(--surface)',
@@ -999,7 +1001,6 @@ function BehaviorEventCard({ onOpenVideo }) {
       </div>
       <div style={{ padding: 12, display: 'grid', gap: 6 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          {/* Keep badge visual; label can be generic to avoid implying taxonomy mismatch */}
           <StatusBadge status="Active" />
           <span style={{ color: 'var(--muted)', fontSize: 12 }}>14:37:09</span>
         </div>
@@ -1013,13 +1014,27 @@ function BehaviorEventCard({ onOpenVideo }) {
   );
 }
 
-// PUBLIC_INTERFACE
+/**
+ * PUBLIC_INTERFACE
+ * ReportsPage with Behavior dropdown, date range, hours filters, and mock PDF/Excel download actions
+ */
 function ReportsPage() {
+  const { species, dateRange, setDateRange } = useAuth();
   const [type, setType] = useState('Behavior Duration Analysis');
-  const [dateRange, setDateRange] = useState('Last 7 Days');
+  const [behavior, setBehavior] = useState('All');
+  const [hours, setHours] = useState('All Day');
   const [openExport, setOpenExport] = useState(false);
+  const [downloading, setDownloading] = useState('');
 
   const isBehaviorDuration = type === 'Behavior Duration Analysis';
+
+  const triggerDownload = async (fmt) => {
+    setDownloading(fmt);
+    // mock async
+    await new Promise(r => setTimeout(r, 700));
+    alert(`Mock ${fmt.toUpperCase()} export queued.\nType: ${type}\nSpecies: ${species}\nBehavior: ${behavior}\nDate Range: ${dateRange}\nHours: ${hours}`);
+    setDownloading('');
+  };
 
   return (
     <AuthedLayout>
@@ -1028,7 +1043,7 @@ function ReportsPage() {
           <div style={{ fontWeight: 800, marginBottom: 10 }}>Report Builder</div>
           <div style={{ display: 'grid', gap: 10 }}>
             <div>
-              <label style={filterLabel}>Type</label>
+              <label style={{ fontSize: 12, color: 'var(--muted)', fontWeight: 700 }}>Type</label>
               <select value={type} onChange={(e) => setType(e.target.value)} style={selectStyle}>
                 <option>Behavior Duration Analysis</option>
                 <option>Summary</option>
@@ -1041,7 +1056,7 @@ function ReportsPage() {
                 : 'Choose a report type to see its description.'}
             </div>
             <div>
-              <label style={filterLabel}>Date Range</label>
+              <label style={{ fontSize: 12, color: 'var(--muted)', fontWeight: 700 }}>Date Range</label>
               <select value={dateRange} onChange={(e) => setDateRange(e.target.value)} style={selectStyle}>
                 <option>Today</option>
                 <option>Last 7 Days</option>
@@ -1050,14 +1065,30 @@ function ReportsPage() {
               </select>
             </div>
             <div>
-              <label style={filterLabel}>Parameters</label>
-              <div style={{ display: 'grid', gap: 6 }}>
-                <label style={{ color: '#D1D5DB', fontSize: 14 }}><input type="checkbox" defaultChecked /> Include charts</label>
-                <label style={{ color: '#D1D5DB', fontSize: 14 }}><input type="checkbox" /> Include raw data</label>
-                <label style={{ color: '#D1D5DB', fontSize: 14 }}><input type="checkbox" defaultChecked /> Async email export</label>
-              </div>
+              <label style={{ fontSize: 12, color: 'var(--muted)', fontWeight: 700 }}>Behavior</label>
+              <select value={behavior} onChange={(e) => setBehavior(e.target.value)} style={selectStyle}>
+                <option>All</option>
+                {BEHAVIOR_CATEGORIES.map(c => <option key={c}>{c}</option>)}
+              </select>
             </div>
-            <button style={primaryBtnStyle} onClick={() => setOpenExport(true)}>Export</button>
+            <div>
+              <label style={{ fontSize: 12, color: 'var(--muted)', fontWeight: 700 }}>Hours</label>
+              <select value={hours} onChange={(e) => setHours(e.target.value)} style={selectStyle}>
+                <option>All Day</option>
+                <option>Daytime</option>
+                <option>Nighttime</option>
+                <option>Custom…</option>
+              </select>
+            </div>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <button style={primaryBtnStyle} onClick={() => setOpenExport(true)}>Export</button>
+              <button style={primaryGhostBtnStyle} onClick={() => triggerDownload('pdf')} disabled={!!downloading}>
+                {downloading === 'pdf' ? 'Preparing PDF…' : 'Download PDF (mock)'}
+              </button>
+              <button style={primaryGhostBtnStyle} onClick={() => triggerDownload('excel')} disabled={!!downloading}>
+                {downloading === 'excel' ? 'Preparing Excel…' : 'Download Excel (mock)'}
+              </button>
+            </div>
             <div style={{ color: '#9CA3AF', fontSize: 12 }}>
               Exports may take a few minutes. You can continue exploring while we generate your report.
             </div>
@@ -1071,6 +1102,9 @@ function ReportsPage() {
             title={isBehaviorDuration ? 'No behavior duration data available for this period.' : 'Report Preview'}
             description={isBehaviorDuration ? '' : 'Preview placeholder for selected type and parameters.'}
           />
+          <div style={{ marginTop: 12, fontSize: 12, color: 'var(--muted)' }}>
+            Filters applied — Species: <b>{species}</b>, Behavior: <b>{behavior}</b>, Date Range: <b>{dateRange}</b>, Hours: <b>{hours}</b>
+          </div>
         </div>
       </div>
       {openExport && (
@@ -1149,24 +1183,17 @@ function ChatPage() {
 /**
  * Layout wrapper for authenticated pages:
  * includes ConnectionBanner and NavBar
+ * Adds left panel layout option and stores species/date in auth context for app-wide usage.
  */
 function AuthedLayout({ children }) {
-  const [connLost, setConnLost] = useState(false);
-  const [dateRange, setDateRange] = useState('Last 7 Days');
-  const [species, setSpecies] = useState('Giant Anteater');
+  const { connLost, setConnLost } = useAuth();
   const showChat = !!featureFlags.chat;
   const alertsCount = 1; // mock badge
 
   return (
     <div style={{ minHeight: '100vh', background: themeTokens.background, color: themeTokens.text }}>
       <ConnectionBanner visible={connLost} />
-      <NavBar
-        dateRange={dateRange}
-        setDateRange={setDateRange}
-        showChatTab={showChat}
-        species={species}
-        setSpecies={setSpecies}
-      />
+      <NavBar showChatTab={showChat} />
       <div style={{ padding: 16, maxWidth: 1200, margin: '0 auto' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
           <span title="Project status" style={{ fontSize: 12, color: 'var(--muted)' }}>
@@ -1203,18 +1230,29 @@ function ProtectedRoute({ children }) {
 // PUBLIC_INTERFACE
 function App() {
   const [authed, setAuthed] = useState(false);
+  const [user, setUser] = useState(null); // { email, role }
+  const [connLost, setConnLost] = useState(false);
+  const [dateRange, setDateRange] = useState('Last 7 Days');
+  const [species, setSpecies] = useState('Giant Anteater');
 
   useEffect(() => {
     // Theme is controlled via CSS variables; no explicit attribute required.
   }, []);
 
-  const authValue = useMemo(() => ({ authed, setAuthed }), [authed]);
+  const authValue = useMemo(() => ({
+    authed, setAuthed,
+    user, setUser,
+    connLost, setConnLost,
+    dateRange, setDateRange,
+    species, setSpecies
+  }), [authed, user, connLost, dateRange, species]);
 
   return (
     <AuthContext.Provider value={authValue}>
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegistrationPage />} />
           <Route path="/select-animal" element={
             <ProtectedRoute>
               <AnimalSelectPage />
