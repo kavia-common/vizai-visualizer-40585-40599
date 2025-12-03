@@ -130,19 +130,35 @@ function DateRangeSelector({ value, onChange }) {
  * Layout components
  */
 function Logo() {
+  /**
+   * Brand logo + text.
+   * - 24x24 icon left of bold 'VizAI' text
+   * - Text uses brand color #1e8a5b (via --primary) for consistency
+   */
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontWeight: 900 }}>
-      <span style={{
-        width: 28, height: 28, borderRadius: 8,
-        background: themeTokens.gradient, boxShadow: themeTokens.shadow
-      }} />
-      <span style={{
-        backgroundImage: themeTokens.gradient,
-        WebkitBackgroundClip: 'text',
-        color: 'transparent',
-        fontSize: 18,
-        letterSpacing: 0.5
-      }}>
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 'var(--brand-gap)',
+        fontWeight: 900,
+        lineHeight: 1,
+      }}
+    >
+      <img
+        src="/assets/vizai-logo.png"
+        width={parseInt(getComputedStyle(document.documentElement).getPropertyValue('--brand-icon-size')) || 24}
+        height={parseInt(getComputedStyle(document.documentElement).getPropertyValue('--brand-icon-size')) || 24}
+        alt="VizAI Logo"
+        style={{ display: 'block' }}
+      />
+      <span
+        style={{
+          color: 'var(--primary)',
+          fontSize: 'var(--brand-text-size)',
+          letterSpacing: 0.5,
+        }}
+      >
         VizAI
       </span>
     </div>
@@ -155,6 +171,9 @@ function Logo() {
  */
 function NavBar({ dateRange, setDateRange, showChatTab, species, setSpecies }) {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { authed } = useAuth();
+
   const isActive = (path) => location.pathname === path;
   const tabStyle = (active) => ({
     position: 'relative',
@@ -167,6 +186,15 @@ function NavBar({ dateRange, setDateRange, showChatTab, species, setSpecies }) {
     border: `1px solid ${active ? 'rgba(30,138,91,0.35)' : 'transparent'}`,
     boxShadow: active ? themeTokens.shadow : 'none'
   });
+
+  const onBrandClick = () => {
+    // Navigate to Animal Selection if unauthenticated, otherwise Dashboard
+    if (!authed) {
+      navigate('/select-animal');
+      return;
+    }
+    navigate('/dashboard');
+  };
 
   // Alert badge (mock) for Alerts tab
   const alertsBadge = (
@@ -183,10 +211,27 @@ function NavBar({ dateRange, setDateRange, showChatTab, species, setSpecies }) {
   return (
     <div className="nav" style={{
       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-      padding: 16, position: 'sticky', top: 0, zIndex: 10
+      padding: 'var(--nav-padding)', position: 'sticky', top: 0, zIndex: 10
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-        <Logo />
+        <button
+          onClick={onBrandClick}
+          title="Go to Home"
+          aria-label="Go to Home"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 'var(--brand-gap)',
+            padding: 6,
+            borderRadius: 10,
+            border: `1px solid transparent`,
+            background: 'transparent',
+            cursor: 'pointer',
+          }}
+          className="focus-ring"
+        >
+          <Logo />
+        </button>
         <div style={{ height: 24, width: 1, background: themeTokens.border }} />
         <label style={{ color: 'var(--muted)', fontSize: 12 }} title="Choose species to filter views">Species</label>
         <select

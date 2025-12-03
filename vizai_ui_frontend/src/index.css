@@ -24,6 +24,12 @@
 
   /* Gradient */
   --gradient: linear-gradient(135deg, #1e8a5b 0%, #34d399 100%);
+
+  /* Brand area sizing */
+  --brand-gap: 10px;
+  --brand-icon-size: 24px;
+  --brand-text-size: 18px;
+  --nav-padding: 16px;
 }
 
 /* Reset and base */
