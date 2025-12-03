@@ -3,6 +3,11 @@ import { BrowserRouter, Routes, Route, Navigate, Link, useLocation, useNavigate 
 import './index.css';
 import './App.css';
 import AIHelpChat from './components/AIHelpChat';
+import { FilterProvider, useFilters } from './state';
+import UnifiedFiltersSidebar from './components/UnifiedFiltersSidebar';
+import OnboardingWizard from './components/OnboardingWizard';
+import AlertsCenter from './pages/AlertsCenter';
+import { HelpCenter } from './pages/HelpFeedback';
 
 /**
  * PUBLIC_INTERFACE
@@ -217,7 +222,7 @@ function NavBar({ dateRange, setDateRange, showChatTab, species, setSpecies }) {
   // Note: showChatTab retained but header simplified to only logo and tabs; species/date move to sidebar.
   const location = useLocation();
   const navigate = useNavigate();
-  const { authed } = useAuth();
+  const { authed, role } = useAuth();
 
   const isActive = (path) => location.pathname === path;
   const tabStyle = (active) => ({
@@ -284,9 +289,12 @@ function NavBar({ dateRange, setDateRange, showChatTab, species, setSpecies }) {
           Reports
         </Link>
         <Link to="/alerts" style={tabStyle(isActive('/alerts'))} title="Alerts">
-          Alerts
+          Alerts <span aria-hidden style={{ marginLeft: 6, background: 'rgba(245,158,11,0.18)', color: 'var(--secondary)', padding: '2px 6px', borderRadius: 999, fontSize: 12 }}>●</span>
         </Link>
-        {featureFlags.chat && (
+        <Link to="/help" style={tabStyle(isActive('/help'))} title="Help Center">
+          Help
+        </Link>
+        {featureFlags.chat && role === 'researcher' && (
           <Link to="/chat" style={tabStyle(isActive('/chat'))} title="Chat (beta)">
             Chat
           </Link>
@@ -1020,8 +1028,9 @@ function DashboardPage() {
  */
 function DashboardPie({ categories, durations, total, colorFor, fmtTooltip }) {
   const navigate = useNavigate();
+  const { applyFilters } = useFilters();
   const onOpen = (behavior) => {
-    // route with behavior + carry current date range as state
+    applyFilters({ behavior });
     navigate('/timeline', { state: { behaviorFilter: behavior, dateRangeHint: 'from-dashboard' } });
   };
 
@@ -1118,8 +1127,9 @@ function TimelinePage() {
   const TIME_RANGES = ['1h', '6h', '12h', '24h', 'Day', 'Week'];
   const [activeRange, setActiveRange] = useState('6h');
 
-  // Read behavior filter passed from dashboard
-  const initialBehavior = location.state?.behaviorFilter || 'All';
+  // Read behavior filter passed from dashboard; fallback to unified filters
+  const { filters, applyFilters } = useFilters();
+  const initialBehavior = location.state?.behaviorFilter || filters.behavior || 'All';
 
   // Mock "current camera"
   const currentCamera = 'Camera 1';
@@ -1367,7 +1377,7 @@ function TimelinePage() {
   return (
     <AuthedLayout>
       <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: 16 }}>
-        <FiltersPanel />
+        <UnifiedFiltersSidebar />
         <div style={{ display: 'grid', gap: 12 }}>
           {/* Behavior Timeline section header */}
           <div className="card" style={{ borderRadius: 16, padding: 12, display: 'grid', gap: 10 }}>
@@ -1641,26 +1651,7 @@ function ReportsPage() {
   );
 }
 
-// PUBLIC_INTERFACE
-function AlertsPage() {
-  return (
-    <AuthedLayout>
-      <div className="card" style={{
-        padding: 16, display: 'grid', gap: 12
-      }}>
-        <div style={{ fontWeight: 900 }}>Alerts</div>
-        <div style={{
-          border: `1px solid ${themeTokens.border}`, borderRadius: 12, padding: 12, display: 'flex', gap: 12, alignItems: 'center'
-        }}>
-          <span style={{ width: 10, height: 10, borderRadius: 999, background: themeTokens.secondary, boxShadow: themeTokens.shadow }} />
-          <div style={{ fontWeight: 800 }}>Feeding anomaly detected</div>
-          <div style={{ color: '#9CA3AF', marginLeft: 'auto' }}>2 hours ago</div>
-          <button style={primaryGhostBtnStyle}>View</button>
-        </div>
-      </div>
-    </AuthedLayout>
-  );
-}
+
 
 /**
  * PUBLIC_INTERFACE
@@ -1809,42 +1800,12 @@ function AuthedLayout({ children }) {
   };
 
   // Sidebar with Species and Date Range per spec
-  const Sidebar = () => (
-    <aside className="card" style={{ width: 260, padding: 16, borderRadius: 16, height: 'fit-content', position: 'sticky', top: 88 }}>
-      <div style={{ fontWeight: 800, marginBottom: 10 }}>Filters</div>
-      <div style={{ display: 'grid', gap: 12 }}>
-        <div>
-          <label style={{ fontSize: 12, color: 'var(--muted)', fontWeight: 700 }}>Select Species</label>
-          <select
-            aria-label="Select Species"
-            value={species}
-            onChange={(e) => setSpecies(e.target.value)}
-            style={selectStyle}
-            title="Select Species: Giant Anteater ▾"
-          >
-            <option value="Giant Anteater">Giant Anteater ▾</option>
-            <option value="Pangolin" disabled>Pangolin (Coming Soon)</option>
-            <option value="Sloth" disabled>Sloth (Coming Soon)</option>
-          </select>
-        </div>
-        <div>
-          <label style={{ fontSize: 12, color: 'var(--muted)', fontWeight: 700 }}>Date Range</label>
-          <select
-            aria-label="Date Range"
-            value={dateRange}
-            onChange={(e) => setDateRange(e.target.value)}
-            style={selectStyle}
-            title="Date Range: Last 7 Days ▾"
-          >
-            <option>Today</option>
-            <option>Last 7 Days</option>
-            <option>Last 30 Days</option>
-            <option>Custom…</option>
-          </select>
-        </div>
-      </div>
-    </aside>
-  );
+  const Sidebar = () => <UnifiedFiltersSidebar />;
+
+  const { onboarding, setOnboardingState, applyFilters: applyGlobalFilters } = useFilters();
+
+  // Show onboarding wizard if not completed
+  const showOnboarding = !onboarding?.completed;
 
   return (
     <div style={{ minHeight: '100vh', background: themeTokens.background, color: themeTokens.text }}>
@@ -1879,11 +1840,45 @@ function AuthedLayout({ children }) {
                 Alerts: <strong style={{ color: themeTokens.secondary }}>{alertsCount}</strong>
               </span>
             </div>
+            <div style={{ marginTop: 10 }}>
+              <button
+                style={primaryGhostBtnStyle}
+                onClick={() => {
+                  const next = role === 'researcher' ? 'keeper' : role === 'keeper' ? 'veterinarian' : 'researcher';
+                  setRole(next);
+                }}
+                title="Switch Workspace Role (mock)"
+              >
+                Switch Workspace Role (mock)
+              </button>
+            </div>
           </div>
         </div>
       </div>
       {/* Persistent help widget on authed pages */}
       <AIHelpChat />
+      {showOnboarding && <OnboardingWizard />}
+
+      {/* Mobile bottom tab bar (basic) */}
+      <div
+        aria-label="Mobile tabs"
+        style={{
+          position: 'fixed',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          background: 'var(--surface)',
+          borderTop: `1px solid ${themeTokens.border}`,
+          display: 'flex',
+          justifyContent: 'space-around',
+          padding: 8,
+        }}
+      >
+        <a href="/dashboard" style={{ padding: 8, minWidth: 64, textAlign: 'center' }}>Dashboard</a>
+        <a href="/timeline" style={{ padding: 8, minWidth: 64, textAlign: 'center' }}>Timeline</a>
+        <a href="/reports" style={{ padding: 8, minWidth: 64, textAlign: 'center' }}>Reports</a>
+        <a href="/alerts" style={{ padding: 8, minWidth: 64, textAlign: 'center' }}>Alerts</a>
+      </div>
     </div>
   );
 }
@@ -1918,6 +1913,7 @@ function App() {
 
   return (
     <AuthContext.Provider value={authValue}>
+      <FilterProvider>
       <BrowserRouter>
         <Routes>
           <Route path="/register" element={<RegistrationPage />} />
@@ -1944,7 +1940,12 @@ function App() {
           } />
           <Route path="/alerts" element={
             <ProtectedRoute>
-              <AlertsPage />
+              <AlertsCenter />
+            </ProtectedRoute>
+          } />
+          <Route path="/help" element={
+            <ProtectedRoute>
+              <HelpCenter />
             </ProtectedRoute>
           } />
           <Route path="/chat" element={
@@ -1956,6 +1957,7 @@ function App() {
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </BrowserRouter>
+      </FilterProvider>
     </AuthContext.Provider>
   );
 }

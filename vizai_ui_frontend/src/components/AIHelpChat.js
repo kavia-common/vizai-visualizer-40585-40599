@@ -17,6 +17,7 @@ export default function AIHelpChat() {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState([
     { role: "assistant", text: "Hi! I’m your VizAI helper. How can I assist you today?" },
+    { role: "assistant", text: "Tip: Ask VizAI, e.g., “Why is moving high today?” You can run or apply to the current view." },
   ]);
   const [input, setInput] = useState("");
 
@@ -362,7 +363,7 @@ export default function AIHelpChat() {
             ref={inputRef}
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Ask about navigation, reports, or timeline…"
+            placeholder='Ask VizAI: e.g., "Why is moving high today?"'
             aria-label="Your question"
             style={styles.input}
           />
