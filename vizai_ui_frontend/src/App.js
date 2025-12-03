@@ -142,13 +142,11 @@ function DateRangeSelector({ value, onChange }) {
 function Logo() {
   /**
    * Brand logo + text.
-   * - Icon 48x48 by default (supports up to 64px via CSS var)
+   * - Icon fixed to 64x64 per spec
    * - Flex alignment with a 12px gap handled via CSS
-   * - Accessibility: <img alt="VizAI Logo">; wrapper ARIA on clickable parent; tooltip on parent button
+   * - Accessibility preserved: <img alt="VizAI Logo">; tooltip on image; wrapper ARIA via parent button
    */
-  // Reference shows a rounded-square icon at 32px with 12px gap to text and 16px left margin from viewport.
-  // We keep CSS variables but pin defaults to match the reference exactly unless overridden.
-  const sizePx = 32;
+  const sizePx = 64;
 
   return (
     <div
@@ -172,10 +170,10 @@ function Logo() {
         aria-hidden={false}
         style={{
           display: 'inline-block',
-          width: `var(--brand-icon-size, ${sizePx}px)`,
-          height: `var(--brand-icon-size, ${sizePx}px)`,
+          width: `${sizePx}px`,
+          height: `${sizePx}px`,
           objectFit: 'contain',
-          borderRadius: 8,          // rounded square per reference
+          borderRadius: 12,         // rounded square per spec
           filter: 'none',
           opacity: 1,
           visibility: 'visible',
@@ -198,8 +196,8 @@ function Logo() {
           alignItems: 'center',
           margin: 0,
           padding: 0,
-          fontSize: 'var(--brand-text-size, 24px)', // keep 24px bold brand color unless overridden
-          color: 'var(--primary, #1e8a5b)',
+          fontSize: '28px',          // enforce 28px text size
+          color: '#1e8a5b',          // brand color
         }}
         aria-label="VizAI"
       >

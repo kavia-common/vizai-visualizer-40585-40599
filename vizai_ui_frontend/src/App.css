@@ -101,7 +101,7 @@
   box-shadow: var(--shadow);
 }
 
-/* Brand container and logo/text spacing per spec */
+/* Brand container and logo/text spacing per updated spec */
 .nav .brand {
   display: inline-flex !important;
   align-items: center !important;
@@ -110,15 +110,15 @@
   padding: 0 !important;
 }
 
-/* Logo sizing: fixed 64px unless overridden by var */
+/* Logo sizing: fixed 64x64 square */
 .nav img[alt="VizAI Logo"] {
-  width: var(--brand-icon-size, 64px) !important;
-  height: var(--brand-icon-size, 64px) !important;
+  width: 64px !important;
+  height: 64px !important;
   max-width: none !important;
   max-height: none !important;
   display: inline-block !important;
   object-fit: contain !important;
-  border-radius: 12px !important; /* reference shows rounded square icon */
+  border-radius: 12px !important; /* rounded-square per brand */
   background: transparent !important;
   opacity: 1 !important;
   visibility: visible !important;
@@ -129,31 +129,18 @@
   mix-blend-mode: normal !important;
 }
 
-/* Brand text: single bold 'VizAI' in brand color */
+/* Brand text: single bold 'VizAI' in brand color at 28px */
 .nav .brand .brand-text {
   display: inline-flex !important;
   align-items: center !important;
   line-height: 1 !important;
   height: auto !important;
-  font-size: var(--brand-text-size, 24px) !important;
-  font-weight: 800 !important; /* emphasize boldness per reference */
-  color: var(--primary, #1e8a5b) !important;
+  font-size: 28px !important;     /* enforce 28px per spec */
+  font-weight: 700 !important;    /* bold */
+  color: #1e8a5b !important;      /* brand color */
   margin: 0 !important;
   padding: 0 !important;
   letter-spacing: 0.2px !important;
-}
-
-/* Brand text style: 24px bold, brand color */
-.nav .brand .brand-text {
-  display: inline-flex !important;
-  align-items: center !important;
-  line-height: 1 !important;
-  height: auto !important;
-  font-size: 24px !important;
-  font-weight: 700 !important;
-  color: var(--primary, #1e8a5b) !important;
-  margin: 0 !important;
-  padding: 0 !important;
 }
 
 .dropdown {
