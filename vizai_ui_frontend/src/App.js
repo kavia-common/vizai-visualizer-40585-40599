@@ -423,6 +423,7 @@ function VideoModal({ open, onClose }) {
   const [speed, setSpeed] = useState(1);
   const [showAI, setShowAI] = useState(true);
   const [error, setError] = useState('');
+  const [camera, setCamera] = useState('Fixed Cam 1'); // Camera: Fixed Cam 1 / PTZ Cam 2
   const playerRef = useRef(null);
 
   useEffect(() => {
@@ -430,6 +431,7 @@ function VideoModal({ open, onClose }) {
       setPlaying(false);
       setSpeed(1);
       setError('');
+      setCamera('Fixed Cam 1');
     }
   }, [open]);
 
@@ -452,6 +454,10 @@ function VideoModal({ open, onClose }) {
     setPlaying(false);
   };
 
+  const switchCamera = () => {
+    setCamera((c) => (c === 'Fixed Cam 1' ? 'PTZ Cam 2' : 'Fixed Cam 1'));
+  };
+
   return (
     <div role="dialog" aria-modal="true" style={{
       position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.35)',
@@ -463,8 +469,13 @@ function VideoModal({ open, onClose }) {
       }}>
         <div style={{ padding: 16, borderBottom: `1px solid ${themeTokens.border}`, display: 'grid', gap: 6, background: 'var(--table-header-bg)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div style={{ fontWeight: 800 }}>
-              Behavior Video – Moving at 2025-01-22 14:37:09
+            <div style={{ display: 'grid', gap: 4 }}>
+              <div style={{ fontWeight: 800 }}>
+                Behavior Video – Moving at 2025-01-22 14:37:09
+              </div>
+              <div className="muted" style={{ fontSize: 12 }}>
+                Camera: {camera}
+              </div>
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
               <button style={primaryGhostBtnStyle} onClick={() => setShowAI(v => !v)} title="Toggle AI annotations">
@@ -474,7 +485,7 @@ function VideoModal({ open, onClose }) {
             </div>
           </div>
           <div className="muted" style={{ fontSize: 12 }}>
-            Validate AI annotations and download clips for documentation.
+            Use synchronized playback to validate behavior from different camera perspectives.
           </div>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16, padding: 16 }}>
@@ -490,6 +501,21 @@ function VideoModal({ open, onClose }) {
             ) : (
               <>
                 <div>[ Placeholder Player {playing ? 'Playing' : 'Paused'} @ {speed}x ]</div>
+                <div style={{
+                  position: 'absolute', top: 12, left: 12, background: 'rgba(0,0,0,0.35)', border: `1px solid ${themeTokens.border}`,
+                  color: '#fff', padding: '4px 8px', borderRadius: 8, fontSize: 12
+                }}>
+                  {camera}
+                </div>
+                <button
+                  onClick={switchCamera}
+                  title="Compare multiple angles side-by-side for better analysis."
+                  style={{
+                    position: 'absolute', top: 12, right: 12, ...primaryGhostBtnStyle, background: 'rgba(255,255,255,0.85)'
+                  }}
+                >
+                  Switch Camera View
+                </button>
                 {showAI && (
                   <div style={{
                     position: 'absolute', bottom: 12, left: 12, background: 'rgba(30,138,91,0.15)', border: `1px solid ${themeTokens.border}`,
@@ -510,9 +536,10 @@ function VideoModal({ open, onClose }) {
               <li>Timestamp: 2025-01-22 14:37:09</li>
               <li>Source: {process.env.REACT_APP_BACKEND_URL || 'mock://video'}</li>
             </ul>
-            <div style={{ marginTop: 16, display: 'flex', gap: 8 }}>
-              <button style={primaryBtnStyle} title="Download video (mock)">Download</button>
-              <button style={primaryGhostBtnStyle} title="Open this time in Timeline">Open in Timeline</button>
+            <div style={{ marginTop: 16, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <button style={primaryBtnStyle} title="Download Clip">Download Clip</button>
+              <button style={primaryGhostBtnStyle} title="Share Timestamp">Share Timestamp</button>
+              <button style={primaryGhostBtnStyle} onClick={switchCamera} title="Compare multiple angles side-by-side for better analysis.">Switch Camera View</button>
               <button style={primaryGhostBtnStyle} onClick={simulateError} title="Simulate error">Sim Error</button>
             </div>
           </div>
@@ -683,7 +710,7 @@ function DashboardPage() {
   // Section descriptions
   const SECTION_TITLES = {
     count: 'Behavior Count',
-    duration: 'Behavior Duration',
+    duration: 'Behavior Duration Analysis',
     daily: 'Daily Activity Pattern',
   };
 
@@ -757,13 +784,13 @@ function DashboardPage() {
   // Total minutes in the mocked "day"
   const totalDuration = BEHAVIOR_CATEGORIES.reduce((sum, k) => sum + (mockDurations[k] || 0), 0);
 
-  // Helper for tooltip formatting "Name: 8h 45m (34% of day)"
+  // Helper for tooltip formatting "Name: 8h 45m (34%)"
   const fmtTooltip = (name) => {
     const mins = mockDurations[name] || 0;
     const hh = Math.floor(mins / 60);
     const mm = mins % 60;
     const pct = totalDuration > 0 ? Math.round((mins / totalDuration) * 100) : 0;
-    return `${name}: ${hh}h ${String(mm).padStart(2, '0')}m (${pct}% of day)`;
+    return `${name}: ${hh}h ${String(mm).padStart(2, '0')}m (${pct}%)`;
   };
 
   // Additional helpers for new chart views
@@ -892,13 +919,16 @@ function DashboardPage() {
             </div>
             {/* Helper text near toggles */}
             <div style={{ color: 'var(--muted)', fontSize: 12, marginBottom: 8 }}>
-              Switch between Pie and Stacked Bar to visualize behavior duration as percentages or cumulative time.
+              View time spent in each behavior as a Pie chart or Stacked Bar chart.
             </div>
 
             {durationMode === 'count' ? (
               <EmptyState title="Count mode" description="Showing distribution by event count (mocked)." />
             ) : totalDuration === 0 ? (
-              <EmptyState title="No behavior duration data available for this period." description="" />
+              <EmptyState
+                title="No behavior duration data available for this period."
+                description="Try selecting a different date range or check if data collection is active."
+              />
             ) : (
               <>
                 {/* Titles per view */}
@@ -913,12 +943,12 @@ function DashboardPage() {
                     {/* Legend */}
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                       {BEHAVIOR_CATEGORIES.map((b, idx) => {
-                        const mins = mockDurations[b] || 0;
-                        const pct = totalDuration ? Math.round((mins / totalDuration) * 100) : 0;
                         const color = pieColor(idx);
                         return (
-                          <div key={b} title={`${b}: ${formatHhMm(mins)} (${pct}%)`}
-                               style={{ display: 'inline-flex', alignItems: 'center', gap: 6, border: `1px solid ${themeTokens.border}`, padding: '6px 8px', borderRadius: 10, background: 'var(--surface)' }}>
+                          <div
+                            key={b}
+                            title={fmtTooltip(b)}
+                            style={{ display: 'inline-flex', alignItems: 'center', gap: 6, border: `1px solid ${themeTokens.border}`, padding: '6px 8px', borderRadius: 10, background: 'var(--surface)' }}>
                             <span aria-hidden style={{ width: 10, height: 10, borderRadius: 999, background: color, boxShadow: themeTokens.shadow }} />
                             <span style={{ fontSize: 12, color: themeTokens.text }}>{b}</span>
                           </div>
@@ -948,7 +978,7 @@ function DashboardPage() {
                         return (
                           <div key={b} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#6B7280' }}>
                             <span>{b}</span>
-                            <span title={`${b}: ${formatHhMm(mins)} (${pct}%)`}>{`${formatHhMm(mins)} (${pct}%)`}</span>
+                            <span title={fmtTooltip(b)}>{`${formatHhMm(mins)} (${pct}%)`}</span>
                           </div>
                         );
                       })}
@@ -988,8 +1018,8 @@ function DashboardPage() {
                           <div
                             key={b}
                             style={{ width: `${widthPct}%`, background: color }}
-                            title={`${b}: ${formatHhMm(mins)}`}
-                            aria-label={`${b}: ${formatHhMm(mins)}`}
+                            title={fmtTooltip(b)}
+                            aria-label={fmtTooltip(b)}
                           />
                         );
                       })}
