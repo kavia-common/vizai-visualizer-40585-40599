@@ -26,7 +26,7 @@
   --gradient: linear-gradient(135deg, #1e8a5b 0%, #34d399 100%);
 
   /* Brand area sizing */
-  --brand-icon-size: 48px;       /* default 48px, can be overridden up to 64px */
+  --brand-icon-size: 64px;       /* default 64px per spec */
   --brand-text-size: 24px;       /* brand text size default */
   --nav-padding: 16px;
 }

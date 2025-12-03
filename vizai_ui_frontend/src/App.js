@@ -146,7 +146,7 @@ function Logo() {
    * - Flex alignment with a 12px gap handled via CSS
    * - Accessibility: <img alt="VizAI Logo">; wrapper ARIA on clickable parent; tooltip on parent button
    */
-  const sizePx = 48;
+  const sizePx = 64;
 
   return (
     <div
