@@ -132,18 +132,21 @@ function DateRangeSelector({ value, onChange }) {
 function Logo() {
   /**
    * Brand logo + text (single instance).
-   * - 48x48 icon per requirement
+   * - 56x56 icon for clear visibility
    * - 8px spacing, vertical centering, bold single "VizAI" in brand color
-   * - Accessibility: alt, title, and visible text
-   * - CSS safeguards against hidden/opacity filters
+   * - Accessibility: alt='VizAI Logo', title='Return to Dashboard'
+   * - Explicit sizing with CSS variable fallback to guarantee rendering
    */
-  const sizePx = 48; // enforce exact 48x48
+  const sizePx = Number(
+    (getComputedStyle(document.documentElement).getPropertyValue('--brand-icon-size') || '').replace('px','')
+  ) || 56; // enforce exact 56px with CSS var fallback
+
   return (
     <div
       style={{
         display: 'inline-flex',
         alignItems: 'center',
-        gap: '8px',               // enforce 8px spacing
+        gap: '8px',  // enforce 8px spacing
         fontWeight: 900,
         lineHeight: 1,
         color: 'var(--text)',
@@ -158,9 +161,9 @@ function Logo() {
         title="Return to Dashboard"
         aria-hidden={false}
         style={{
-          display: 'block',
-          width: `${sizePx}px`,
-          height: `${sizePx}px`,
+          display: 'inline-block',
+          width: `var(--brand-icon-size, ${sizePx}px)`,
+          height: `var(--brand-icon-size, ${sizePx}px)`,
           objectFit: 'contain',
           filter: 'none',
           opacity: 1,
