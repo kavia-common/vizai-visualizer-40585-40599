@@ -164,7 +164,7 @@ function Logo() {
  * PUBLIC_INTERFACE
  * NavBar: Logo, Tabs, User badge (Species/Date moved to left panel per requirement)
  */
-function NavBar({ showChatTab }) {
+function NavBar() {
   const location = useLocation();
   const navigate = useNavigate();
   const { authed } = useAuth();
@@ -189,17 +189,6 @@ function NavBar({ showChatTab }) {
     }
     navigate('/dashboard');
   };
-
-  const alertsBadge = (
-    <span aria-label="notifications" style={{
-      position: 'absolute', top: -4, right: -4,
-      width: 18, height: 18, borderRadius: 999,
-      background: themeTokens.secondary, color: 'var(--surface)',
-      fontSize: 11, fontWeight: 900,
-      display: 'grid', placeItems: 'center',
-      boxShadow: themeTokens.shadow
-    }}>1</span>
-  );
 
   return (
     <div className="nav" style={{
@@ -237,20 +226,6 @@ function NavBar({ showChatTab }) {
           <Link to="/reports" style={tabStyle(isActive('/reports'))} title="Generate reports">
             Reports
           </Link>
-          <span style={{ position: 'relative' }}>
-            <Link to="/alerts" style={tabStyle(isActive('/alerts'))} title="Alerts Center">
-              Alerts
-            </Link>
-            {alertsBadge}
-          </span>
-          <Link
-            to={showChatTab ? '/chat' : '/dashboard'}
-            style={{ ...tabStyle(isActive('/chat')), opacity: showChatTab ? 1 : 0.5, cursor: showChatTab ? 'pointer' : 'not-allowed' }}
-            aria-disabled={!showChatTab}
-            title={showChatTab ? 'AI Chat (beta)' : 'AI Chat (disabled)'}
-          >
-            Chat
-          </Link>
         </div>
       </div>
 
@@ -260,7 +235,7 @@ function NavBar({ showChatTab }) {
           border: `1px solid ${themeTokens.border}`, borderRadius: 12, background: 'var(--surface)', boxShadow: themeTokens.shadow
         }}>
           <div style={{ width: 8, height: 8, borderRadius: 999, background: '#22C55E' }} />
-          <span style={{ fontWeight: 700 }}>researcher@viz.ai</span>
+          <span style={{ fontWeight: 700 }}>user@viz.ai</span>
         </div>
       </div>
     </div>
@@ -1264,58 +1239,7 @@ function ReportsPage() {
   );
 }
 
-// PUBLIC_INTERFACE
-function AlertsPage() {
-  return (
-    <AuthedLayout>
-      <div className="card" style={{
-        padding: 16, display: 'grid', gap: 12
-      }}>
-        <div style={{ fontWeight: 900 }}>Alerts</div>
-        <div style={{
-          border: `1px solid ${themeTokens.border}`, borderRadius: 12, padding: 12, display: 'flex', gap: 12, alignItems: 'center'
-        }}>
-          <span style={{ width: 10, height: 10, borderRadius: 999, background: themeTokens.secondary, boxShadow: themeTokens.shadow }} />
-          <div style={{ fontWeight: 800 }}>Feeding anomaly detected</div>
-          <div style={{ color: '#9CA3AF', marginLeft: 'auto' }}>2 hours ago</div>
-          <button style={primaryGhostBtnStyle}>View</button>
-        </div>
-      </div>
-    </AuthedLayout>
-  );
-}
 
-// PUBLIC_INTERFACE
-function ChatPage() {
-  const enabled = !!featureFlags.chat || false; // phase-gated
-  return (
-    <AuthedLayout>
-      {!enabled ? (
-        <EmptyState title="AI Chat is coming soon" description="This feature is currently disabled." />
-      ) : (
-        <div style={{ display: 'grid', gridTemplateRows: 'auto 1fr auto', height: 'calc(100vh - 160px)', gap: 12 }}>
-          <div style={{ fontWeight: 900 }}>Welcome to VizAI Chat</div>
-          <div className="card" style={{ borderRadius: 16, padding: 16, overflow: 'auto' }}>
-            <div className="muted" style={{ marginBottom: 12 }}>Suggested:</div>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
-              <button style={primaryGhostBtnStyle}>Show feeding trends</button>
-              <button style={primaryGhostBtnStyle}>Compare active vs resting</button>
-              <button style={primaryGhostBtnStyle}>Explain daily pattern</button>
-            </div>
-            <div style={{ color: 'var(--text)' }}>[ Typing indicator… ]</div>
-            <div style={{ marginTop: 12, background: 'var(--table-row-hover)', border: `1px solid ${themeTokens.border}`, borderRadius: 12, padding: 12 }}>
-              Sample response with chart, text and references (placeholder).
-            </div>
-          </div>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <input placeholder="Ask about behaviors, trends, anomalies…" style={{ ...inputStyle, margin: 0, flex: 1 }} />
-            <button style={primaryBtnStyle}>Send</button>
-          </div>
-        </div>
-      )}
-    </AuthedLayout>
-  );
-}
 
 /**
  * Layout wrapper for authenticated pages:
@@ -1324,8 +1248,6 @@ function ChatPage() {
  */
 function AuthedLayout({ children }) {
   const { connLost, setConnLost } = useAuth();
-  const showChat = !!featureFlags.chat;
-  const alertsCount = 1; // mock badge
 
   return (
     <div style={{ minHeight: '100vh', background: themeTokens.background, color: themeTokens.text }}>
@@ -1333,14 +1255,11 @@ function AuthedLayout({ children }) {
         visible={true}
         message={connLost ? 'Connection Status: Offline – Check your network' : 'Connection Status: Online'}
       />
-      <NavBar showChatTab={showChat} />
+      <NavBar />
       <div style={{ padding: 16, maxWidth: 1200, margin: '0 auto' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
           <span title="Project status" style={{ fontSize: 12, color: 'var(--muted)' }}>
             Environment: {process.env.REACT_APP_NODE_ENV || 'development'} • API: {process.env.REACT_APP_API_BASE || 'mock'}
-          </span>
-          <span style={{ marginLeft: 'auto', fontSize: 12, color: 'var(--muted)' }}>
-            Alerts: <strong style={{ color: themeTokens.secondary }}>{alertsCount}</strong>
           </span>
         </div>
         {children}
@@ -1411,16 +1330,6 @@ function App() {
           <Route path="/reports" element={
             <ProtectedRoute>
               <ReportsPage />
-            </ProtectedRoute>
-          } />
-          <Route path="/alerts" element={
-            <ProtectedRoute>
-              <AlertsPage />
-            </ProtectedRoute>
-          } />
-          <Route path="/chat" element={
-            <ProtectedRoute>
-              <ChatPage />
             </ProtectedRoute>
           } />
           <Route path="/" element={<Navigate to="/login" replace />} />
