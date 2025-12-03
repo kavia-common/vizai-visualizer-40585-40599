@@ -27,7 +27,7 @@
 
   /* Brand area sizing */
   --brand-gap: 8px;              /* spacing between logo and text */
-  --brand-icon-size: 32px;       /* required 32x32 icon size */
+  --brand-icon-size: 40px;       /* increased to 40px for visibility */
   --brand-text-size: 18px;       /* bold single brand text size */
   --nav-padding: 16px;
 }

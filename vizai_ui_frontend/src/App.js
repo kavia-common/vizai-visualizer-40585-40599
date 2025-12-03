@@ -153,8 +153,8 @@ function Logo() {
       <img
         src="/assets/vizai-logo.png"        /* Public path asset */
         alt="VizAI Logo"
-        width={32}
-        height={32}
+        width={40}
+        height={40}
         title="Return to Dashboard"
         aria-hidden={false}
         style={{
