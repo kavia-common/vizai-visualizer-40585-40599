@@ -112,6 +112,8 @@
   opacity: 1 !important;
   visibility: visible !important;
   filter: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
 }
 
 .dropdown {
