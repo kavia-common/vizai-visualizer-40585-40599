@@ -1071,31 +1071,274 @@ function ChartBlock({ title, subtitle, children }) {
 
 // PUBLIC_INTERFACE
 function TimelinePage() {
+  // View controls (kept for compatibility)
   const [view, setView] = useState('grid');
   const [zoom, setZoom] = useState(100);
-  const [count] = useState(12);
   const [openVideo, setOpenVideo] = useState(false);
+
+  // Behavior Timeline section state
+  const TIME_RANGES = ['1h', '6h', '12h', '24h', 'Day', 'Week'];
+  const [activeRange, setActiveRange] = useState('6h');
+
+  // Mock "current camera"
+  const currentCamera = 'Camera 1';
+
+  // Mock behavior items for cards and table as specified
+  const behaviorItems = [
+    {
+      type: 'Recumbent',
+      start: '14:12',
+      end: '14:28',
+      durationMin: 16,
+      camera: 'Camera 1',
+      confidence: 0.88,
+    },
+    {
+      type: 'Scratching',
+      start: '14:31',
+      end: '14:33',
+      durationMin: 2,
+      camera: 'Camera 1',
+      confidence: 0.81,
+    },
+    {
+      type: 'Self-Directed',
+      start: '14:39',
+      end: '14:45',
+      durationMin: 6,
+      camera: 'Camera 2',
+      confidence: 0.93,
+    },
+    {
+      type: 'Pacing',
+      start: '14:46',
+      end: '14:59',
+      durationMin: 13,
+      camera: 'Camera 1',
+      confidence: 0.76,
+    },
+    {
+      type: 'Moving',
+      start: '15:03',
+      end: '15:12',
+      durationMin: 9,
+      camera: 'Camera 1',
+      confidence: 0.92,
+    },
+  ];
+
+  const resultCount = behaviorItems.length;
+
+  // Tooltip copy for confidence
+  const CONFIDENCE_TOOLTIP = 'Confidence: AI classification accuracy for this behavior.';
+
+  // Helper: render tab button using existing .tab style tokens
+  const Tab = ({ label, active, onClick }) => (
+    <button
+      type="button"
+      role="tab"
+      aria-selected={active}
+      onClick={onClick}
+      className={`tab${active ? ' active' : ''}`}
+      style={{ cursor: 'pointer' }}
+      title={`Time range: ${label}`}
+    >
+      {label}
+    </button>
+  );
+
+  // Basic camera timeline bar (visual scaffold)
+  const CameraTimelineBar = () => (
+    <div
+      className="card"
+      aria-label="Camera timeline"
+      title={`Timeline for ${currentCamera}`}
+      style={{ padding: 12, borderRadius: 12, display: 'grid', gap: 8 }}
+    >
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ fontWeight: 800 }}>{currentCamera}</div>
+        <div className="muted" style={{ fontSize: 12 }}>
+          Range: {activeRange}
+        </div>
+      </div>
+      <div
+        style={{
+          height: 14,
+          background: 'var(--table-row-hover)',
+          border: `1px solid ${themeTokens.border}`,
+          borderRadius: 999,
+          position: 'relative',
+          overflow: 'hidden',
+        }}
+      >
+        {/* Mock segments showing activity blocks */}
+        {behaviorItems.map((b, idx) => {
+          // Simple evenly spaced mock positions
+          const left = 4 + idx * (92 / behaviorItems.length);
+          const width = Math.max(6, 10 - idx); // variable width
+          return (
+            <div
+              key={`${b.type}-${idx}`}
+              style={{
+                position: 'absolute',
+                left: `${left}%`,
+                width: `${width}%`,
+                top: 1,
+                bottom: 1,
+                borderRadius: 999,
+                background: 'linear-gradient(135deg, rgba(30,138,91,0.6), rgba(52,211,153,0.6))',
+                border: `1px solid ${themeTokens.border}`,
+              }}
+              title={`${b.type}: ${b.start}–${b.end}`}
+              aria-label={`${b.type} from ${b.start} to ${b.end}`}
+            />
+          );
+        })}
+      </div>
+    </div>
+  );
+
+  // Card component per new spec
+  const TimelineBehaviorCard = ({ item, onPreview }) => {
+    const { type, start, end, durationMin, camera, confidence } = item;
+    const confidencePct = Math.round(confidence * 100);
+    const label = `Behavior – ${start} to ${end} • ${durationMin} min • ${camera} • ${confidencePct}%`;
+
+    return (
+      <div className="card" style={{ borderRadius: 14, padding: 12, display: 'grid', gap: 8 }}>
+        <div style={{ fontWeight: 800 }}>{type}</div>
+        <div
+          className="muted"
+          style={{ fontSize: 12 }}
+          aria-label={`Behavior details: ${type} from ${start} to ${end}, ${durationMin} minutes, ${camera}, ${confidencePct} percent confidence`}
+        >
+          {label}{' '}
+          <span
+            aria-label="confidence info"
+            title={CONFIDENCE_TOOLTIP}
+            style={{ textDecoration: 'underline dotted', cursor: 'help' }}
+          >
+            (i)
+          </span>
+        </div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button
+            style={primaryBtnStyle}
+            onClick={onPreview}
+            aria-label={`Preview ${type} from ${start} to ${end}`}
+            title="Preview the exact video segment"
+          >
+            Preview
+          </button>
+          <button style={primaryGhostBtnStyle} title="More details">Details</button>
+        </div>
+      </div>
+    );
+  };
+
+  // Behavior Events Table as specified
+  const BehaviorEventsTable = () => (
+    <div className="card" style={{ borderRadius: 16, padding: 12 }}>
+      <div style={{ fontWeight: 800, marginBottom: 8 }}>Behavior Events</div>
+      <div className="muted" style={{ fontSize: 12, marginBottom: 8 }}>
+        Click Preview to watch the exact video segment for this behavior. Use filters to narrow down behaviors by type, duration, or confidence.
+      </div>
+      <div style={{ overflowX: 'auto' }}>
+        <table
+          role="table"
+          aria-label="Behavior Events"
+          style={{ width: '100%', borderCollapse: 'separate', borderSpacing: 0 }}
+        >
+          <thead>
+            <tr>
+              <th style={thStyle}>Type</th>
+              <th style={thStyle}>Start</th>
+              <th style={thStyle}>End</th>
+              <th style={thStyle}>Duration (min)</th>
+              <th style={thStyle}>Confidence</th>
+              <th style={thStyle}>Camera</th>
+              <th style={thStyle} aria-label="actions">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {behaviorItems.map((b, idx) => (
+              <tr key={`row-${idx}`} style={{ borderBottom: `1px solid ${themeTokens.border}` }}>
+                <td style={tdStyle}>{b.type}</td>
+                <td style={tdStyle}>{b.start}</td>
+                <td style={tdStyle}>{b.end}</td>
+                <td style={tdStyle}>{b.durationMin}</td>
+                <td style={tdStyle}>
+                  <span title={CONFIDENCE_TOOLTIP} aria-label={`Confidence ${Math.round(b.confidence * 100)} percent`}>
+                    {Math.round(b.confidence * 100)}%
+                  </span>
+                </td>
+                <td style={tdStyle}>{b.camera}</td>
+                <td style={{ ...tdStyle }}>
+                  <button
+                    style={primaryGhostBtnStyle}
+                    onClick={() => setOpenVideo(true)}
+                    aria-label={`Preview ${b.type} video`}
+                    title="Preview the exact video segment"
+                  >
+                    Preview
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+
+  // Styles for table cells using theme tokens
+  const thStyle = {
+    textAlign: 'left',
+    padding: '10px 12px',
+    borderBottom: `1px solid ${themeTokens.border}`,
+    color: themeTokens.text,
+  };
+  const tdStyle = {
+    padding: '10px 12px',
+    color: themeTokens.text,
+    borderBottom: `1px solid ${themeTokens.border}`,
+    fontSize: 14,
+  };
+
   return (
     <AuthedLayout>
       <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: 16 }}>
         <FiltersPanel />
         <div style={{ display: 'grid', gap: 12 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div style={{ color: '#9CA3AF' }}>{count} results</div>
-            <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, alignItems: 'center' }}>
-              <button style={controlBtnStyle} onClick={() => setZoom(z => Math.max(25, z - 25))} title="Zoom out">-</button>
-              <div style={{ minWidth: 48, textAlign: 'center' }}>{zoom}%</div>
-              <button style={controlBtnStyle} onClick={() => setZoom(z => Math.min(200, z + 25))} title="Zoom in">+</button>
-              <button style={{ ...primaryGhostBtnStyle, background: view === 'grid' ? 'rgba(52,211,153,0.12)' : 'transparent' }} onClick={() => setView('grid')}>Grid</button>
-              <button style={{ ...primaryGhostBtnStyle, background: view === 'list' ? 'rgba(52,211,153,0.12)' : 'transparent' }} onClick={() => setView('list')}>List</button>
+          {/* Behavior Timeline section header */}
+          <div className="card" style={{ borderRadius: 16, padding: 12, display: 'grid', gap: 10 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{ fontWeight: 900, fontSize: 18 }}>Behavior Timeline</div>
+              <div style={{ marginLeft: 'auto', display: 'flex', gap: 6 }} role="tablist" aria-label="Time ranges">
+                {TIME_RANGES.map(r => (
+                  <Tab key={r} label={r} active={activeRange === r} onClick={() => setActiveRange(r)} />
+                ))}
+              </div>
             </div>
+            {/* Camera timeline bar */}
+            <CameraTimelineBar />
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: view === 'grid' ? 'repeat(auto-fill, minmax(240px,1fr))' : '1fr', gap: 12 }}>
-            {Array.from({ length: count }).map((_, i) => (
-              <BehaviorEventCard key={i} onOpenVideo={() => setOpenVideo(true)} />
+          {/* Cards list per spec, replacing older generic cards */}
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: view === 'grid' ? 'repeat(auto-fill, minmax(260px, 1fr))' : '1fr',
+              gap: 12,
+            }}
+          >
+            {behaviorItems.map((item, idx) => (
+              <TimelineBehaviorCard key={`card-${idx}`} item={item} onPreview={() => setOpenVideo(true)} />
             ))}
           </div>
+
+          {/* Events table */}
+          <BehaviorEventsTable />
         </div>
       </div>
       <VideoModal open={openVideo} onClose={() => setOpenVideo(false)} />
