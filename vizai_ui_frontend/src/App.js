@@ -132,15 +132,13 @@ function DateRangeSelector({ value, onChange }) {
 function Logo() {
   /**
    * Brand logo + text (single instance).
-   * - 24x24 icon left of bold 'VizAI' text
-   * - Text uses brand color via --primary (#1e8a5b)
-   * - 8px spacing between icon and text
-   * - Vertically center-aligned with nav items
+   * Ensures:
+   * - Explicit 24x24 icon sizing
+   * - display:block to avoid layout collapse
+   * - No opacity/filter that could hide the logo
+   * - Sufficient contrast on current background
    */
-  const iconSize =
-    parseInt(
-      getComputedStyle(document.documentElement).getPropertyValue('--brand-icon-size')
-    ) || 24;
+  const iconSize = 24; // enforce explicit size per requirement
   return (
     <div
       style={{
@@ -149,6 +147,7 @@ function Logo() {
         gap: '8px',
         fontWeight: 900,
         lineHeight: 1,
+        color: 'var(--text)',
       }}
     >
       <img
@@ -156,13 +155,23 @@ function Logo() {
         width={iconSize}
         height={iconSize}
         alt="VizAI Logo"
-        style={{ display: 'block' }}
+        title="Return to Dashboard"
+        style={{
+          display: 'block',
+          width: `${iconSize}px`,
+          height: `${iconSize}px`,
+          objectFit: 'contain',
+          filter: 'none',
+          opacity: 1,
+        }}
       />
       <span
         style={{
           color: 'var(--primary)',
           fontSize: 'var(--brand-text-size)',
           letterSpacing: 0.5,
+          lineHeight: 1,
+          whiteSpace: 'nowrap',
         }}
       >
         VizAI
