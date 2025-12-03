@@ -1,5 +1,5 @@
-import React, { useEffect, useMemo, useState, createContext, useContext } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, Link, useLocation } from 'react-router-dom';
+import React, { useEffect, useMemo, useState, createContext, useContext, useRef } from 'react';
+import { BrowserRouter, Routes, Route, Navigate, Link, useLocation, useNavigate } from 'react-router-dom';
 import './index.css';
 import './App.css';
 
@@ -12,7 +12,7 @@ const themeTokens = {
   secondary: '#F59E0B',
   success: '#10B981',
   error: '#EF4444',
-  background: '#0B1220', // darker playful base
+  background: '#0B1220',
   surface: '#111827',
   text: '#F9FAFB',
   gradient: 'linear-gradient(90deg, #34D399 0%, #FBBF24 50%, #F87171 100%)',
@@ -21,10 +21,9 @@ const themeTokens = {
   glow: '0 0 16px rgba(16,185,129,0.35)',
 };
 
-const play = (s) => s;
-
 /**
- * Basic feature flags coming from env (string) to toggle future items (chat)
+ * PUBLIC_INTERFACE
+ * Basic feature flags from env (phase gating). Use REACT_APP_FEATURE_FLAGS JSON.
  */
 const featureFlags = (() => {
   try {
@@ -72,6 +71,7 @@ function StatusBadge({ status }) {
         boxShadow: status === 'Active' ? themeTokens.glow : 'none',
       }}
       aria-label={`status ${status}`}
+      title={`Behavior status: ${status}`}
     >
       <span style={{
         width: 8, height: 8, borderRadius: 999, background: cfg.color, boxShadow: status === 'Active' ? themeTokens.glow : 'none'
@@ -163,6 +163,7 @@ function NavBar({ dateRange, setDateRange, showChatTab, species, setSpecies }) {
   const location = useLocation();
   const isActive = (path) => location.pathname === path;
   const tabStyle = (active) => ({
+    position: 'relative',
     padding: '10px 14px',
     borderRadius: 12,
     fontWeight: 700,
@@ -173,6 +174,18 @@ function NavBar({ dateRange, setDateRange, showChatTab, species, setSpecies }) {
     boxShadow: active ? themeTokens.glow : 'none'
   });
 
+  // Alert badge (mock) for Alerts tab
+  const alertsBadge = (
+    <span aria-label="notifications" style={{
+      position: 'absolute', top: -4, right: -4,
+      width: 18, height: 18, borderRadius: 999,
+      background: themeTokens.secondary, color: '#0B1220',
+      fontSize: 11, fontWeight: 900,
+      display: 'grid', placeItems: 'center',
+      boxShadow: themeTokens.glow
+    }}>1</span>
+  );
+
   return (
     <div style={{
       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -181,7 +194,7 @@ function NavBar({ dateRange, setDateRange, showChatTab, species, setSpecies }) {
       <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
         <Logo />
         <div style={{ height: 24, width: 1, background: themeTokens.border }} />
-        <label style={{ color: '#9CA3AF', fontSize: 12 }}>Species</label>
+        <label style={{ color: '#9CA3AF', fontSize: 12 }} title="Choose species to filter views">Species</label>
         <select
           aria-label="Species"
           value={species}
@@ -202,14 +215,26 @@ function NavBar({ dateRange, setDateRange, showChatTab, species, setSpecies }) {
         </select>
 
         <div style={{ marginLeft: 8, display: 'flex', gap: 4 }}>
-          <Link to="/dashboard" style={tabStyle(isActive('/dashboard'))}>Dashboard</Link>
-          <Link to="/timeline" style={tabStyle(isActive('/timeline'))}>Timeline</Link>
-          <Link to="/reports" style={tabStyle(isActive('/reports'))}>Reports</Link>
-          <Link to="/alerts" style={tabStyle(isActive('/alerts'))}>Alerts</Link>
+          <Link to="/dashboard" style={tabStyle(isActive('/dashboard'))} title="Overview metrics">
+            Dashboard
+          </Link>
+          <Link to="/timeline" style={tabStyle(isActive('/timeline'))} title="Behavior Explorer">
+            Timeline
+          </Link>
+          <Link to="/reports" style={tabStyle(isActive('/reports'))} title="Generate reports">
+            Reports
+          </Link>
+          <span style={{ position: 'relative' }}>
+            <Link to="/alerts" style={tabStyle(isActive('/alerts'))} title="Alerts Center">
+              Alerts
+            </Link>
+            {alertsBadge}
+          </span>
           <Link
             to={showChatTab ? '/chat' : '/dashboard'}
             style={{ ...tabStyle(isActive('/chat')), opacity: showChatTab ? 1 : 0.5, cursor: showChatTab ? 'pointer' : 'not-allowed' }}
             aria-disabled={!showChatTab}
+            title={showChatTab ? 'AI Chat (beta)' : 'AI Chat (disabled)'}
           >
             Chat
           </Link>
@@ -271,10 +296,42 @@ function ErrorState({ message = 'Something went wrong. Please try again.' }) {
 
 /**
  * PUBLIC_INTERFACE
- * VideoModal stub with controls and metadata
+ * VideoModal with playback controls, AI annotations toggle, metadata panel and basic error handling
  */
 function VideoModal({ open, onClose }) {
+  const [playing, setPlaying] = useState(false);
+  const [speed, setSpeed] = useState(1);
+  const [showAI, setShowAI] = useState(true);
+  const [error, setError] = useState('');
+  const playerRef = useRef(null);
+
+  useEffect(() => {
+    if (!open) {
+      setPlaying(false);
+      setSpeed(1);
+      setError('');
+    }
+  }, [open]);
+
   if (!open) return null;
+
+  const togglePlay = () => {
+    if (error) return;
+    setPlaying(p => !p);
+  };
+
+  const cycleSpeed = () => {
+    setSpeed(s => {
+      const next = s === 1 ? 1.5 : s === 1.5 ? 2 : 1;
+      return next;
+    });
+  };
+
+  const simulateError = () => {
+    setError('Unable to load video stream. Please try again later.');
+    setPlaying(false);
+  };
+
   return (
     <div role="dialog" aria-modal="true" style={{
       position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)',
@@ -284,16 +341,38 @@ function VideoModal({ open, onClose }) {
         background: themeTokens.surface, border: `1px solid ${themeTokens.border}`,
         borderRadius: 16, width: 'min(100%, 980px)', overflow: 'hidden', color: themeTokens.text
       }}>
-        <div style={{ padding: 16, borderBottom: `1px solid ${themeTokens.border}`, display: 'flex', justifyContent: 'space-between' }}>
+        <div style={{ padding: 16, borderBottom: `1px solid ${themeTokens.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div style={{ fontWeight: 800 }}>Video Preview</div>
-          <button onClick={onClose} style={primaryGhostBtnStyle}>Close</button>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button style={primaryGhostBtnStyle} onClick={() => setShowAI(v => !v)} title="Toggle AI annotations">
+              {showAI ? 'Hide AI' : 'Show AI'}
+            </button>
+            <button onClick={onClose} style={primaryGhostBtnStyle} title="Close">Close</button>
+          </div>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16, padding: 16 }}>
-          <div style={{
-            background: '#0B1220', border: `1px solid ${themeTokens.border}`, borderRadius: 12,
-            height: 360, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9CA3AF'
-          }}>
-            [ Placeholder Player ]
+          <div
+            ref={playerRef}
+            style={{
+              background: '#0B1220', border: `1px solid ${themeTokens.border}`, borderRadius: 12,
+              height: 360, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9CA3AF', position: 'relative'
+            }}
+          >
+            {error ? (
+              <ErrorState message={error} />
+            ) : (
+              <>
+                <div>[ Placeholder Player {playing ? 'Playing' : 'Paused'} @ {speed}x ]</div>
+                {showAI && (
+                  <div style={{
+                    position: 'absolute', bottom: 12, left: 12, background: 'rgba(16,185,129,0.2)', border: `1px solid ${themeTokens.border}`,
+                    color: themeTokens.text, padding: '6px 8px', borderRadius: 8, fontSize: 12
+                  }}>
+                    AI: Feeding (0.92)
+                  </div>
+                )}
+              </>
+            )}
           </div>
           <div>
             <div style={{ fontWeight: 800, marginBottom: 8 }}>Metadata</div>
@@ -302,21 +381,23 @@ function VideoModal({ open, onClose }) {
               <li>Behavior: Feeding</li>
               <li>Confidence: 0.92</li>
               <li>Timestamp: 2025-01-22 14:37:09</li>
+              <li>Source: {process.env.REACT_APP_BACKEND_URL || 'mock://video'}</li>
             </ul>
             <div style={{ marginTop: 16, display: 'flex', gap: 8 }}>
-              <button style={primaryBtnStyle}>Download</button>
-              <button style={primaryGhostBtnStyle}>Open in Timeline</button>
+              <button style={primaryBtnStyle} title="Download video (mock)">Download</button>
+              <button style={primaryGhostBtnStyle} title="Open this time in Timeline">Open in Timeline</button>
+              <button style={primaryGhostBtnStyle} onClick={simulateError} title="Simulate error">Sim Error</button>
             </div>
           </div>
         </div>
-        <div style={{ padding: 16, borderTop: `1px solid ${themeTokens.border}`, display: 'flex', gap: 8 }}>
-          <button style={controlBtnStyle}>⏮</button>
-          <button style={controlBtnStyle}>⏯</button>
-          <button style={controlBtnStyle}>⏭</button>
+        <div style={{ padding: 16, borderTop: `1px solid ${themeTokens.border}`, display: 'flex', gap: 8, alignItems: 'center' }}>
+          <button style={controlBtnStyle} title="Previous">⏮</button>
+          <button style={controlBtnStyle} onClick={togglePlay} title={playing ? 'Pause' : 'Play'}>{playing ? '⏸' : '▶️'}</button>
+          <button style={controlBtnStyle} title="Next">⏭</button>
           <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
-            <button style={primaryGhostBtnStyle}>1x</button>
-            <button style={primaryGhostBtnStyle}>CC</button>
-            <button style={primaryGhostBtnStyle}>HD</button>
+            <button style={primaryGhostBtnStyle} onClick={cycleSpeed} title="Playback speed">{speed}x</button>
+            <button style={primaryGhostBtnStyle} title="Closed captions">CC</button>
+            <button style={primaryGhostBtnStyle} title="High Definition">HD</button>
           </div>
         </div>
       </div>
@@ -363,6 +444,8 @@ const controlBtnStyle = {
 function LoginPage() {
   const { setAuthed } = useAuth();
   const [error, setError] = useState('');
+  const navigate = useNavigate();
+
   const onSubmit = (e) => {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
@@ -374,18 +457,20 @@ function LoginPage() {
     }
     setError('');
     setAuthed(true);
+    navigate('/select-animal', { replace: true });
   };
+
   return (
     <div style={{ minHeight: '100vh', background: themeTokens.background, color: themeTokens.text, display: 'grid', placeItems: 'center', padding: 24 }}>
       <form onSubmit={onSubmit} style={{
-        width: 'min(100%, 420px)', background: themeTokens.surface, border: `1px solid ${themeTokens.border}`, borderRadius: 16, padding: 24
+        width: 'min(100%, 440px)', background: themeTokens.surface, border: `1px solid ${themeTokens.border}`, borderRadius: 16, padding: 24
       }}>
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
           <Logo />
         </div>
         <div className="title" style={{ textAlign: 'center', fontWeight: 900, marginBottom: 6 }}>Welcome to VizAI</div>
         <div className="subtitle" style={{ textAlign: 'center', color: '#9CA3AF', marginBottom: 20 }}>
-          Sign in to continue
+          Sign in with your research account to continue.
         </div>
         <label style={{ fontWeight: 700, fontSize: 12, color: '#9CA3AF' }}>Email</label>
         <input name="email" type="email" placeholder="name@research.org" style={inputStyle} />
@@ -460,18 +545,105 @@ function Card({ title, description, active, disabled }) {
 // PUBLIC_INTERFACE
 function DashboardPage() {
   const [openVideo, setOpenVideo] = useState(false);
+  // Mock dataset
+  const [durationMode, setDurationMode] = useState('count'); // count|duration
+  const [pieMode, setPieMode] = useState(true); // stacked/pie toggle (mocked)
+  const behaviors = ['Feeding', 'Resting', 'Active'];
+  const mockCounts = { Feeding: 18, Resting: 26, Active: 44 };
+  const mockDurations = { Feeding: 120, Resting: 340, Active: 210 }; // minutes
+  const totalCount = behaviors.reduce((a, b) => a + mockCounts[b], 0);
+
   return (
     <AuthedLayout>
       <div style={{ display: 'grid', gap: 16 }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(280px,1fr))', gap: 16 }}>
           <ChartBlock title="Behavior Count">
-            <EmptyState title="Behavior Count" description="Chart placeholder" />
+            {totalCount === 0 ? (
+              <EmptyState title="No behaviors found" description="Try expanding your date range." />
+            ) : (
+              <div style={{ display: 'grid', gap: 8 }}>
+                {behaviors.map(b => (
+                  <div key={b} style={{ display: 'grid', gap: 6 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#9CA3AF' }}>
+                      <span>{b}</span>
+                      <span>{mockCounts[b]}</span>
+                    </div>
+                    <div style={{
+                      height: 10, background: '#0B1220', border: `1px solid ${themeTokens.border}`, borderRadius: 999, overflow: 'hidden'
+                    }}>
+                      <div style={{
+                        width: `${(mockCounts[b] / Math.max(1, totalCount)) * 100}%`,
+                        background: themeTokens.gradient, height: '100%'
+                      }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </ChartBlock>
-          <ChartBlock title="Behavior Duration (toggle)">
-            <EmptyState title="Behavior Duration" description="Toggle by count/duration" />
+          <ChartBlock title="Behavior Duration">
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, gap: 8 }}>
+              <div style={{ color: '#9CA3AF', fontSize: 12 }}>View</div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button
+                  style={{ ...primaryGhostBtnStyle, background: durationMode === 'count' ? 'rgba(52,211,153,0.12)' : 'transparent' }}
+                  onClick={() => setDurationMode('count')}
+                  title="Show by count"
+                >
+                  Count
+                </button>
+                <button
+                  style={{ ...primaryGhostBtnStyle, background: durationMode === 'duration' ? 'rgba(245,158,11,0.12)' : 'transparent' }}
+                  onClick={() => setDurationMode('duration')}
+                  title="Show by duration"
+                >
+                  Duration
+                </button>
+                <button
+                  style={{ ...primaryGhostBtnStyle, background: pieMode ? 'rgba(59,130,246,0.12)' : 'transparent' }}
+                  onClick={() => setPieMode(v => !v)}
+                  title="Toggle stacked/pie"
+                >
+                  {pieMode ? 'Pie' : 'Stacked'}
+                </button>
+              </div>
+            </div>
+            {durationMode === 'count' ? (
+              <EmptyState title="Count mode" description="Showing distribution by event count (mocked)." />
+            ) : (
+              <div style={{ display: 'grid', gap: 8 }}>
+                {behaviors.map(b => (
+                  <div key={b} style={{ display: 'grid', gap: 6 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#9CA3AF' }}>
+                      <span>{b}</span>
+                      <span>{mockDurations[b]} min</span>
+                    </div>
+                    <div style={{
+                      height: 10, background: '#0B1220', border: `1px solid ${themeTokens.border}`, borderRadius: 999, overflow: 'hidden'
+                    }}>
+                      <div style={{
+                        width: `${(mockDurations[b] / 400) * 100}%`,
+                        background: themeTokens.gradient, height: '100%'
+                      }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </ChartBlock>
           <ChartBlock title="Daily Activity Pattern">
-            <EmptyState title="Daily Activity Pattern" description="Chart placeholder" />
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6,1fr)', gap: 6 }}>
+              {Array.from({ length: 18 }).map((_, i) => (
+                <div key={i} title="mock heat"
+                  style={{
+                    height: 22,
+                    borderRadius: 6,
+                    background: `rgba(16,185,129,${0.15 + ((i % 6) * 0.12)})`,
+                    border: `1px solid ${themeTokens.border}`
+                  }}
+                />
+              ))}
+            </div>
           </ChartBlock>
         </div>
         <div>
@@ -499,6 +671,7 @@ function TimelinePage() {
   const [view, setView] = useState('grid');
   const [zoom, setZoom] = useState(100);
   const [count] = useState(12);
+  const [openVideo, setOpenVideo] = useState(false);
   return (
     <AuthedLayout>
       <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: 16 }}>
@@ -517,11 +690,12 @@ function TimelinePage() {
 
           <div style={{ display: 'grid', gridTemplateColumns: view === 'grid' ? 'repeat(auto-fill, minmax(240px,1fr))' : '1fr', gap: 12 }}>
             {Array.from({ length: count }).map((_, i) => (
-              <BehaviorEventCard key={i} />
+              <BehaviorEventCard key={i} onOpenVideo={() => setOpenVideo(true)} />
             ))}
           </div>
         </div>
       </div>
+      <VideoModal open={openVideo} onClose={() => setOpenVideo(false)} />
     </AuthedLayout>
   );
 }
@@ -569,7 +743,7 @@ const selectStyle = {
   marginTop: 6
 };
 
-function BehaviorEventCard() {
+function BehaviorEventCard({ onOpenVideo }) {
   return (
     <div style={{
       border: `1px solid ${themeTokens.border}`,
@@ -586,8 +760,9 @@ function BehaviorEventCard() {
           <span style={{ color: '#9CA3AF', fontSize: 12 }}>14:37:09</span>
         </div>
         <div style={{ color: '#D1D5DB' }}>Confidence: 0.92</div>
-        <div>
-          <button style={primaryGhostBtnStyle}>Open</button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button style={primaryGhostBtnStyle} onClick={onOpenVideo}>View Video</button>
+          <button style={primaryGhostBtnStyle} title="Open details">Open</button>
         </div>
       </div>
     </div>
@@ -722,24 +897,35 @@ function AuthedLayout({ children }) {
   const [connLost, setConnLost] = useState(false);
   const [dateRange, setDateRange] = useState('Last 7 Days');
   const [species, setSpecies] = useState('Giant Anteater');
+  const showChat = !!featureFlags.chat;
+  const alertsCount = 1; // mock badge
+
   return (
     <div style={{ minHeight: '100vh', background: themeTokens.background, color: themeTokens.text }}>
       <ConnectionBanner visible={connLost} />
       <NavBar
         dateRange={dateRange}
         setDateRange={setDateRange}
-        showChatTab={!!featureFlags.chat}
+        showChatTab={showChat}
         species={species}
         setSpecies={setSpecies}
       />
       <div style={{ padding: 16, maxWidth: 1200, margin: '0 auto' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+          <span title="Project status" style={{ fontSize: 12, color: '#9CA3AF' }}>
+            Environment: {process.env.REACT_APP_NODE_ENV || 'development'} • API: {process.env.REACT_APP_API_BASE || 'mock'}
+          </span>
+          <span style={{ marginLeft: 'auto', fontSize: 12, color: '#9CA3AF' }}>
+            Alerts: <strong style={{ color: themeTokens.secondary }}>{alertsCount}</strong>
+          </span>
+        </div>
         {children}
         <div style={{ marginTop: 16 }}>
           <button style={primaryGhostBtnStyle} onClick={() => setConnLost(v => !v)}>
             Toggle Connection Banner
           </button>
           <span style={{ marginLeft: 8, color: '#9CA3AF', fontSize: 12 }}>
-            Research tip: hover elements for behavior vocabulary.
+            Research tip: behavior vocabulary is consistent across views.
           </span>
         </div>
       </div>
