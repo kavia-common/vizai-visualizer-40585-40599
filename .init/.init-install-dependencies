@@ -1,0 +1,4 @@
+{
+    "command": "npm install",
+    "working_directory": "/home/kavia/workspace/code-generation/vizai-visualizer-40585-40599/vizai_ui_frontend"
+}
