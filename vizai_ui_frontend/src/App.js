@@ -78,7 +78,7 @@ function StatusBadge({ status }) {
  * PUBLIC_INTERFACE
  * ConnectionBanner: togglable banner for demo
  */
-function ConnectionBanner({ visible, message = 'Connection lost. Reconnecting…' }) {
+function ConnectionBanner({ visible, message }) {
   if (!visible) return null;
   return (
     <div role="status" style={{
@@ -512,17 +512,22 @@ function RegistrationPage() {
   const [error, setError] = useState('');
 
   // PUBLIC_INTERFACE
-  // Role options used in registration only
-  const ROLES = ['Researcher', 'Staff', 'Admin'];
+  // Role options used in registration only (visible here, hidden post-login)
+  const ROLES = ['Researcher', 'Field Observer', 'Admin'];
 
   const onSubmit = (e) => {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
     const email = String(fd.get('email') || '');
     const password = String(fd.get('password') || '');
+    const confirm = String(fd.get('confirm') || '');
     const role = String(fd.get('role') || '');
-    if (!email || !password || !role) {
-      setError('Please enter a valid email, password, and role.');
+    if (!email || !password || !confirm || !role) {
+      setError('Please complete all fields including role selection.');
+      return;
+    }
+    if (password !== confirm) {
+      setError('Passwords do not match.');
       return;
     }
     // Persist in context (mock). Role is used internally but not shown post-login.
@@ -534,28 +539,39 @@ function RegistrationPage() {
   return (
     <div style={{ minHeight: '100vh', background: themeTokens.background, color: themeTokens.text, display: 'grid', placeItems: 'center', padding: 24 }}>
       <form onSubmit={onSubmit} style={{
-        width: 'min(100%, 460px)', background: themeTokens.surface, border: `1px solid ${themeTokens.border}`, borderRadius: 16, padding: 24, boxShadow: themeTokens.shadow
+        width: 'min(100%, 480px)', background: themeTokens.surface, border: `1px solid ${themeTokens.border}`, borderRadius: 16, padding: 24, boxShadow: themeTokens.shadow
       }}>
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
           <Logo />
         </div>
-        <div className="title" style={{ textAlign: 'center', fontWeight: 900, marginBottom: 6 }}>Create your VizAI Account</div>
+        <div className="title" style={{ textAlign: 'center', fontWeight: 900, marginBottom: 6 }}>Create Your VizAI Account</div>
         <div className="subtitle" style={{ textAlign: 'center', color: 'var(--muted)', marginBottom: 20 }}>
           Register to access dashboards, timeline, and reports.
         </div>
-        <label style={{ fontWeight: 700, fontSize: 12, color: '#9CA3AF' }}>Email</label>
-        <input name="email" type="email" placeholder="name@research.org" style={inputStyle} />
+
+        <label style={{ fontWeight: 700, fontSize: 12, color: '#9CA3AF' }}>Email Address</label>
+        <input name="email" type="email" placeholder="Enter your email" style={inputStyle} aria-label="Email Address" />
+
         <label style={{ fontWeight: 700, fontSize: 12, color: '#9CA3AF' }}>Password</label>
-        <input name="password" type="password" placeholder="••••••••" style={inputStyle} />
-        <label style={{ fontWeight: 700, fontSize: 12, color: '#9CA3AF' }}>Role</label>
-        <select name="role" style={{ ...inputStyle, marginTop: 6 }}>
-          <option value="">Select role…</option>
+        <input name="password" type="password" placeholder="Create a strong password" style={inputStyle} aria-label="Password" />
+
+        <label style={{ fontWeight: 700, fontSize: 12, color: '#9CA3AF' }}>Confirm Password</label>
+        <input name="confirm" type="password" placeholder="Re-enter your password" style={inputStyle} aria-label="Confirm Password" />
+
+        <label style={{ fontWeight: 700, fontSize: 12, color: '#9CA3AF' }}>Select Role</label>
+        <select name="role" style={{ ...inputStyle, marginTop: 6 }} aria-label="Select Role">
+          <option value="">Choose your role…</option>
           {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
         </select>
+        <div style={{ color: 'var(--muted)', fontSize: 12, marginTop: -8, marginBottom: 12 }}>
+          Choose your role for personalized access
+        </div>
+
         {error ? <ErrorState message={error} /> : null}
-        <button type="submit" style={{ ...primaryBtnStyle, width: '100%', marginTop: 12 }}>Register</button>
-        <div style={{ marginTop: 12, color: '#9CA3AF', fontSize: 12, textAlign: 'center' }}>
-          By registering you agree to our research-friendly terms.
+        <button type="submit" style={{ ...primaryBtnStyle, width: '100%', marginTop: 12 }} title="Register & Continue">Register & Continue</button>
+
+        <div style={{ marginTop: 12, textAlign: 'center' }}>
+          <Link to="/login" title="Already have an account? Log in">Already have an account? Log in</Link>
         </div>
       </form>
     </div>
@@ -618,44 +634,165 @@ function LoginPage() {
  * Animal selection remains unchanged.
  */
 function AnimalSelectPage() {
+  const [query, setQuery] = useState('');
+  const [showSuggest, setShowSuggest] = useState(false);
+
+  // Mock species list with expected availability
+  const speciesList = [
+    { key: 'anteater', name: 'Giant Anteater', subtitle: 'Myrmecophaga tridactyla', active: true, expected: null, img: '/assets/giant-anteater.png' },
+    { key: 'pangolin', name: 'Pangolin', subtitle: 'Coming Soon', active: false, expected: 'Expected: Feb 2026', img: '/assets/pangolin.png' },
+    { key: 'sloth', name: 'Sloth', subtitle: 'Coming Soon', active: false, expected: 'Expected: Sep 2025', img: '/assets/sloth.png' },
+  ];
+
+  const filtered = speciesList.filter(s => s.name.toLowerCase().includes(query.toLowerCase()));
+
+  const EmptySpecies = (
+    <EmptyState
+      title="No animals available yet. Check back soon or request a species."
+      description=""
+    />
+  );
+
   return (
     <AuthedLayout>
       <div style={{ display: 'grid', gap: 16 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={{ fontWeight: 900, fontSize: 20 }}>Select Animal</div>
-          <button style={primaryGhostBtnStyle} title="Quick Access">Quick Access</button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+          <div style={{ fontWeight: 900, fontSize: 20, flex: '0 0 auto' }}>Select an Animal to Monitor</div>
+          <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, alignItems: 'center' }}>
+            <input
+              aria-label="Search species"
+              placeholder="Search species…"
+              style={{ ...inputStyle, margin: 0, width: 260 }}
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+            />
+            <button
+              style={primaryGhostBtnStyle}
+              title="Jump back to animals you monitored recently"
+              aria-label="Recently Monitored"
+            >
+              Recently Monitored
+            </button>
+          </div>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px,1fr))', gap: 16 }}>
-          <Card title="Giant Anteater" description="Myrmecophaga tridactyla" active />
-          <Card title="Pangolin" description="Coming Soon" disabled />
-          <Card title="Sloth" description="Coming Soon" disabled />
+
+        <div className="card" style={{ padding: 12, borderRadius: 14, display: 'flex', gap: 8, alignItems: 'center' }}>
+          <div style={{ color: 'var(--muted)', fontSize: 12 }}>
+            Tip: Behavior terms remain consistent across Dashboard, Timeline, and Reports for easy analysis.
+          </div>
+        </div>
+
+        {filtered.length === 0 ? (
+          <div style={{ display: 'grid', gap: 12 }}>
+            {EmptySpecies}
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button style={primaryGhostBtnStyle} onClick={() => setShowSuggest(true)} title="Request a species">
+                Request a Species
+              </button>
+              <button style={primaryGhostBtnStyle} onClick={() => setShowSuggest(true)} title="Suggest a new species">
+                Suggest a new species
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px,1fr))', gap: 16 }}>
+            {filtered.map(s => (
+              <SpeciesCard key={s.key} data={s} />
+            ))}
+          </div>
+        )}
+
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button style={primaryGhostBtnStyle} onClick={() => setShowSuggest(true)} title="Request a species">
+            Request a Species
+          </button>
+          <button style={primaryGhostBtnStyle} onClick={() => setShowSuggest(true)} title="Suggest a new species">
+            Suggest a new species
+          </button>
         </div>
       </div>
+
+      {showSuggest && (
+        <div role="dialog" aria-modal="true" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'grid', placeItems: 'center', zIndex: 60 }}>
+          <div className="card" style={{ width: 420, padding: 16 }}>
+            <div style={{ fontWeight: 900, marginBottom: 10 }}>Suggest a new species</div>
+            <div className="muted" style={{ marginBottom: 10, fontSize: 14 }}>
+              This is a placeholder form. Submit to simulate interest (no backend yet).
+            </div>
+            <div style={{ display: 'grid', gap: 8 }}>
+              <label style={{ fontSize: 12, color: 'var(--muted)', fontWeight: 700 }}>Species Name</label>
+              <input style={inputStyle} placeholder="e.g., Red Panda" aria-label="Species Name" />
+              <label style={{ fontSize: 12, color: 'var(--muted)', fontWeight: 700 }}>Why should we add it?</label>
+              <textarea style={{ ...inputStyle, minHeight: 96 }} placeholder="Brief rationale…" aria-label="Reason" />
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 12 }}>
+              <button style={primaryGhostBtnStyle} onClick={() => setShowSuggest(false)}>Cancel</button>
+              <button style={primaryBtnStyle} onClick={() => { alert('Thanks! We will review your suggestion.'); setShowSuggest(false); }}>Submit</button>
+            </div>
+          </div>
+        </div>
+      )}
     </AuthedLayout>
   );
 }
 
-function Card({ title, description, active, disabled }) {
-  return (
-    <div className="card" style={{
-      borderRadius: 16,
-      padding: 16,
-      background: disabled ? 'var(--table-row-hover)' : 'var(--card-bg)',
-      opacity: disabled ? 0.6 : 1,
-      boxShadow: active ? themeTokens.shadow : 'var(--shadow)'
+function SpeciesCard({ data }) {
+  const { name, subtitle, active, expected, img } = data;
+  const imgFallback = (
+    <div style={{
+      height: 120,
+      background: 'linear-gradient(135deg, rgba(30,138,91,0.12), rgba(245,158,11,0.12))',
+      borderRadius: 12,
+      border: `1px solid ${themeTokens.border}`,
+      display: 'grid', placeItems: 'center', color: 'var(--muted)'
     }}>
-      <div style={{ fontWeight: 800, marginBottom: 6 }}>{title}</div>
-      <div className="muted" style={{ marginBottom: 12 }}>{description}</div>
-      <div style={{ display: 'flex', gap: 8 }}>
-        <Link to={active ? '/dashboard' : '#'} style={{
-          ...primaryBtnStyle,
-          textDecoration: 'none',
-          pointerEvents: active ? 'auto' : 'none',
-          filter: active ? 'none' : 'grayscale(1)',
-        }}>
-          Open
-        </Link>
-        <button style={primaryGhostBtnStyle} disabled={!active}>Details</button>
+      {name}
+    </div>
+  );
+
+  const imageEl = img ? (
+    <div style={{
+      height: 120,
+      borderRadius: 12,
+      overflow: 'hidden',
+      border: `1px solid ${themeTokens.border}`,
+      background: 'var(--surface)',
+      display: 'grid',
+      placeItems: 'center'
+    }}>
+      <img src={img} alt={`${name} image`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+    </div>
+  ) : imgFallback;
+
+  return (
+    <div className="card" style={{ borderRadius: 16, padding: 16 }}>
+      {imageEl}
+      <div style={{ fontWeight: 800, marginTop: 10 }}>{name}</div>
+      <div className="muted" style={{ marginBottom: 8 }}>{subtitle}</div>
+      {expected && !active ? (
+        <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 8 }}>{expected}</div>
+      ) : null}
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        {active ? (
+          <>
+            <Link
+              to="/dashboard"
+              style={{ ...primaryBtnStyle, textDecoration: 'none' }}
+              title="Begin tracking this animal now"
+              aria-label={`Start Monitoring ${name}`}
+            >
+              Start Monitoring
+            </Link>
+            <button style={primaryGhostBtnStyle} title="Open details" aria-label={`View Details for ${name}`}>View Details</button>
+          </>
+        ) : (
+          <>
+            <button style={primaryBtnStyle} title="Get an alert when this species becomes available" aria-label={`Notify me about ${name}`}>
+              Notify Me
+            </button>
+            <button style={primaryGhostBtnStyle} title="Open details" aria-label={`Details for ${name}`}>Details</button>
+          </>
+        )}
       </div>
     </div>
   );
@@ -1192,7 +1329,10 @@ function AuthedLayout({ children }) {
 
   return (
     <div style={{ minHeight: '100vh', background: themeTokens.background, color: themeTokens.text }}>
-      <ConnectionBanner visible={connLost} />
+      <ConnectionBanner
+        visible={true}
+        message={connLost ? 'Connection Status: Offline – Check your network' : 'Connection Status: Online'}
+      />
       <NavBar showChatTab={showChat} />
       <div style={{ padding: 16, maxWidth: 1200, margin: '0 auto' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
@@ -1206,10 +1346,10 @@ function AuthedLayout({ children }) {
         {children}
         <div style={{ marginTop: 16 }}>
           <button style={primaryGhostBtnStyle} onClick={() => setConnLost(v => !v)}>
-            Toggle Connection Banner
+            Toggle Connection Status
           </button>
           <span style={{ marginLeft: 8, color: 'var(--muted)', fontSize: 12 }}>
-            Research tip: behavior vocabulary is consistent across views.
+            Tip: Behavior terms remain consistent across Dashboard, Timeline, and Reports for easy analysis.
           </span>
         </div>
       </div>
