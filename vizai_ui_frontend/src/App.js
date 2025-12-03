@@ -156,7 +156,7 @@ function Logo() {
         alignItems: 'center',
         lineHeight: 1,
         color: 'var(--text)',
-        gap: '12px',               // exact gap between icon and text
+        gap: '10px',               // exact 10px gap between icon and text
         marginLeft: '16px',        // exact left margin from viewport edge
         padding: 0,
       }}
