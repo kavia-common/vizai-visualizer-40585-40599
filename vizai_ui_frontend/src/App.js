@@ -131,20 +131,21 @@ function DateRangeSelector({ value, onChange }) {
  */
 function Logo() {
   /**
-   * Brand logo + text (single instance).
-   * - 64x64 icon for clear visibility
-   * - 8px spacing, vertical centering, bold single "VizAI" in brand color
-   * - Accessibility: alt='VizAI Logo', title='Return to Dashboard', aria-label on wrapper via parent button
-   * - Explicit sizing with CSS variable fallback to guarantee rendering
+   * Brand logo + text.
+   * Requirements:
+   * - Icon fixed at 64x64, vertically center-aligned with text
+   * - No spacing between the icon and the "VizAI" text
+   * - Accessibility: alt='VizAI Logo', aria-label on the clickable wrapper, title='Return to Dashboard'
    */
-  const sizePx = 64; // enforce explicit fixed size via attributes and CSS fallback to --brand-icon-size
+  const sizePx = 64;
 
   return (
     <div
+      className="brand"
       style={{
         display: 'inline-flex',
         alignItems: 'center',
-        gap: '8px',
+        gap: 0, // force no gap inline; also enforced via CSS
         fontWeight: 900,
         lineHeight: 1,
         color: 'var(--text)',
@@ -168,9 +169,11 @@ function Logo() {
           visibility: 'visible',
           maxWidth: 'none',
           maxHeight: 'none',
+          margin: 0, // ensure flush
         }}
       />
       <span
+        className="brand-text"
         title="VizAI"
         style={{
           color: 'var(--primary)',
@@ -179,7 +182,12 @@ function Logo() {
           lineHeight: 1,
           whiteSpace: 'nowrap',
           fontWeight: 900,
+          height: `var(--brand-icon-size, ${sizePx}px)`, // vertically align with image
+          display: 'inline-flex',
+          alignItems: 'center',
+          margin: 0, // ensure flush, no gap
         }}
+        aria-label="VizAI"
       >
         VizAI
       </span>
@@ -243,7 +251,7 @@ function NavBar({ dateRange, setDateRange, showChatTab, species, setSpecies }) {
           style={{
             display: 'inline-flex',
             alignItems: 'center',
-            gap: '8px',
+            gap: 0, /* ensure no added gap at the button level */
             padding: 6,
             borderRadius: 10,
             border: `1px solid transparent`,

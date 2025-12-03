@@ -119,6 +119,30 @@
   mix-blend-mode: normal !important;
 }
 
+/* Brand container: remove any spacing between logo and text */
+.nav .brand {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0 !important;               /* no gap between icon and text */
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* Remove any margin/gap that might be applied to the logo or text specifically */
+.nav .brand img,
+.nav .brand .brand-text {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* Ensure the brand text sits flush next to the icon and is vertically centered */
+.nav .brand .brand-text {
+  display: inline-flex !important;
+  align-items: center !important;
+  line-height: 1 !important;
+  height: var(--brand-icon-size, 64px) !important; /* keep same height for perfect vertical centering */
+}
+
 .dropdown {
   background: var(--surface);
   border: 1px solid var(--border);

@@ -26,7 +26,6 @@
   --gradient: linear-gradient(135deg, #1e8a5b 0%, #34d399 100%);
 
   /* Brand area sizing */
-  --brand-gap: 8px;              /* spacing between logo and text */
   --brand-icon-size: 64px;       /* enforce 64px brand icon */
   --brand-text-size: 18px;       /* bold single brand text size */
   --nav-padding: 16px;
