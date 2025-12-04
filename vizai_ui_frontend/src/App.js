@@ -684,7 +684,24 @@ function SpeciesCard({ data }) {
       {expected && !active ? (
         <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 8 }}>{expected}</div>
       ) : null}
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+
+      {/* Inline details preview using AnimalProfileCard for active species */}
+      {active ? (
+        <div style={{ marginTop: 8 }}>
+          <AnimalProfileCard
+            photo="/assets/animals/anteater-01.jpg"
+            name="Zara"
+            age="5y"
+            sex="F"
+            enclosure="Savannah - E12"
+            status="Active"
+            lastUpdated={new Date()}
+            compact
+          />
+        </div>
+      ) : null}
+
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
         {active ? (
           <>
             <Link

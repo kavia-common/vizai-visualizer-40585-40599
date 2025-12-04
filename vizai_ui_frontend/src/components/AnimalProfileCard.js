@@ -21,7 +21,7 @@ export const STATUS_META = {
 /**
  * PUBLIC_INTERFACE
  * AnimalProfileCard
- * A reusable card for displaying an animal profile summary.
+ * A reusable card for displaying an animal profile summary with inline details under the photo.
  * Props:
  *  - photo: string (URL to image)
  *  - name: string
@@ -66,15 +66,14 @@ export default function AnimalProfileCard({
         padding: compact ? 12 : 16,
         cursor: onClick ? 'pointer' : 'default',
         display: 'grid',
-        gridTemplateColumns: '72px 1fr',
-        gap: 12,
-        alignItems: 'center',
+        gap: 10,
       }}
     >
+      {/* Photo */}
       <div
         style={{
-          width: 72,
-          height: 72,
+          width: '100%',
+          height: compact ? 120 : 160,
           borderRadius: 12,
           overflow: 'hidden',
           border: `1px solid ${COLORS.border}`,
@@ -96,48 +95,57 @@ export default function AnimalProfileCard({
         )}
       </div>
 
-      <div style={{ display: 'grid', gap: 4 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <div style={{ fontWeight: 900, color: COLORS.text }}>{name}</div>
-          <span
-            aria-label={`Current status ${status}`}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 6,
-              padding: '4px 8px',
-              borderRadius: 999,
-              background: meta.bg,
-              color: meta.color,
-              fontWeight: 800,
-              fontSize: 12,
-              border: `1px solid ${COLORS.border}`,
-              boxShadow: COLORS.shadow,
-            }}
-          >
-            <span aria-hidden>{meta.icon}</span>
-            <span>{status}</span>
-          </span>
+      {/* Title row */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div style={{ fontWeight: 900, color: COLORS.text, fontSize: compact ? 14 : 16 }}>
+          {name}
         </div>
-
-        <div
-          className="muted"
+        <span
+          aria-label={`Current status ${status}`}
           style={{
-            display: 'flex',
-            flexWrap: 'wrap',
-            gap: 10,
-            color: COLORS.muted,
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 6,
+            padding: '4px 8px',
+            borderRadius: 999,
+            background: meta.bg,
+            color: meta.color,
+            fontWeight: 800,
             fontSize: 12,
+            border: `1px solid ${COLORS.border}`,
+            boxShadow: COLORS.shadow,
           }}
         >
-          <span title="Age" aria-label={`Age ${age ?? '—'}`}>Age: <b style={{ color: COLORS.text }}>{age ?? '—'}</b></span>
-          <span title="Sex" aria-label={`Sex ${sex ?? '—'}`}>Sex: <b style={{ color: COLORS.text }}>{sex ?? '—'}</b></span>
-          <span title="Enclosure" aria-label={`Enclosure ${enclosure ?? '—'}`}>Enclosure: <b style={{ color: COLORS.text }}>{enclosure ?? '—'}</b></span>
-        </div>
+          <span aria-hidden>{meta.icon}</span>
+          <span>{status}</span>
+        </span>
+      </div>
 
-        <div className="muted" style={{ fontSize: 12 }}>
-          Last updated: <time dateTime={toISOStringSafe(lastUpdated)}>{updatedAt}</time>
-        </div>
+      {/* Inline details directly under the photo */}
+      <div
+        className="muted"
+        style={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: 10,
+          color: COLORS.muted,
+          fontSize: 12,
+        }}
+      >
+        <span title="Age" aria-label={`Age ${age ?? '—'}`}>
+          Age: <b style={{ color: COLORS.text }}>{age ?? '—'}</b>
+        </span>
+        <span title="Sex" aria-label={`Sex ${sex ?? '—'}`}>
+          Sex: <b style={{ color: COLORS.text }}>{sex ?? '—'}</b>
+        </span>
+        <span title="Enclosure" aria-label={`Enclosure ${enclosure ?? '—'}`}>
+          Enclosure: <b style={{ color: COLORS.text }}>{enclosure ?? '—'}</b>
+        </span>
+      </div>
+
+      <div className="muted" style={{ fontSize: 12 }}>
+        Last updated:{' '}
+        <time dateTime={toISOStringSafe(lastUpdated)}>{updatedAt}</time>
       </div>
     </article>
   );
