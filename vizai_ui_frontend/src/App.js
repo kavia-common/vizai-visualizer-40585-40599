@@ -663,36 +663,8 @@ function SpeciesCard({ data }) {
         <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 8 }}>{expected}</div>
       ) : null}
 
-      {/* Inline details for active species under the species subtitle (no individual photo/name) */}
-      {active ? (
-        <div
-          className="muted"
-          style={{
-            display: 'flex',
-            flexWrap: 'wrap',
-            gap: 10,
-            fontSize: 12,
-            marginTop: 6,
-          }}
-          aria-label="Species details"
-        >
-          <span title="Age" aria-label="Age 5y">
-            Age: <b style={{ color: 'var(--text)' }}>5y</b>
-          </span>
-          <span title="Sex" aria-label="Sex F">
-            Sex: <b style={{ color: 'var(--text)' }}>F</b>
-          </span>
-          <span title="Enclosure" aria-label="Enclosure Savannah - E12">
-            Enclosure: <b style={{ color: 'var(--text)' }}>Savannah - E12</b>
-          </span>
-          <span title="Last updated" aria-label="Last updated just now">
-            Last updated:{' '}
-            <time dateTime={new Date().toISOString()}>
-              {new Date().toLocaleString([], { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}
-            </time>
-          </span>
-        </div>
-      ) : null}
+      {/* Species inline details removed: keep layout tidy */}
+      {active ? <div style={{ height: 4 }} aria-hidden /> : null}
 
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
         {active ? (

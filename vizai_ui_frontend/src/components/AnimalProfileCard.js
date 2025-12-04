@@ -76,27 +76,8 @@ export default function AnimalProfileCard({
         </div>
       </div>
 
-      {/* Inline details directly under the photo */}
-      <div
-        className="muted"
-        style={{
-          display: 'flex',
-          flexWrap: 'wrap',
-          gap: 10,
-          color: COLORS.muted,
-          fontSize: 12,
-        }}
-      >
-        <span title="Age" aria-label={`Age ${age ?? '—'}`}>
-          Age: <b style={{ color: COLORS.text }}>{age ?? '—'}</b>
-        </span>
-        <span title="Sex" aria-label={`Sex ${sex ?? '—'}`}>
-          Sex: <b style={{ color: COLORS.text }}>{sex ?? '—'}</b>
-        </span>
-        <span title="Enclosure" aria-label={`Enclosure ${enclosure ?? '—'}`}>
-          Enclosure: <b style={{ color: COLORS.text }}>{enclosure ?? '—'}</b>
-        </span>
-      </div>
+      {/* Inline details removed per requirement: keep card compact with only header and last updated */}
+      <div style={{ height: 4 }} aria-hidden />
 
       <div className="muted" style={{ fontSize: 12 }}>
         Last updated:{' '}
