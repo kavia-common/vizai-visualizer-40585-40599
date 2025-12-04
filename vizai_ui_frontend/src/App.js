@@ -556,7 +556,7 @@ function AnimalSelectPage() {
   );
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: 16 }}>
+    <div style={{ display: 'grid', gridTemplateColumns: '248px 1fr', gap: 16 }}>
       <LeftFilterSidebar />
       <div style={{ display: 'grid', gap: 16 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
@@ -802,7 +802,7 @@ function DashboardPage() {
 
   return (
     <>
-      <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: 16 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '248px 1fr', gap: 16 }}>
         <LeftFilterSidebar />
         <div style={{ display: 'grid', gap: 16 }}>
           {/* Page header aligned to Select Animal tone */}
