@@ -6,7 +6,14 @@ export const FiltersContext = createContext(null);
 // PUBLIC_INTERFACE
 export function useFilters() {
   /** Hook to read/write shared filters state across authed pages. */
-  return useContext(FiltersContext);
+  const ctx = useContext(FiltersContext);
+  if (!ctx) {
+    // Provide a clear, actionable error to help developers wire the provider correctly
+    throw new Error(
+      'useFilters must be used within a <FiltersProvider>. Ensure authenticated routes (Dashboard, Timeline, Reports) are wrapped by <FiltersProvider> (e.g., in AuthedLayout).'
+    );
+  }
+  return ctx;
 }
 
 /**
