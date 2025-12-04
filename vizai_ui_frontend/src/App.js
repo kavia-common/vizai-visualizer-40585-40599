@@ -645,7 +645,7 @@ function AnimalSelectPage() {
 
   const EmptySpecies = (
     <EmptyState
-      title="No animals available yet. Check back soon or request a species."
+      title="No animals available yet. Check back soon or suggest a species."
       description=""
     />
   );
@@ -683,11 +683,11 @@ function AnimalSelectPage() {
           <div style={{ display: 'grid', gap: 12 }}>
             {EmptySpecies}
             <div style={{ display: 'flex', gap: 8 }}>
-              <button style={primaryGhostBtnStyle} onClick={() => setShowSuggest(true)} title="Request a species">
-                Request a Species
+              <button style={primaryBtnStyle} title="Add a species record">
+                Add Species
               </button>
-              <button style={primaryGhostBtnStyle} onClick={() => setShowSuggest(true)} title="Suggest a new species">
-                Suggest a new species
+              <button style={primaryGhostBtnStyle} onClick={() => setShowSuggest(true)} title="Suggest a species">
+                Suggest Species
               </button>
             </div>
           </div>
@@ -700,11 +700,11 @@ function AnimalSelectPage() {
         )}
 
         <div style={{ display: 'flex', gap: 8 }}>
-          <button style={primaryGhostBtnStyle} onClick={() => setShowSuggest(true)} title="Request a species">
-            Request a Species
+          <button style={primaryBtnStyle} title="Add a species record">
+            Add Species
           </button>
-          <button style={primaryGhostBtnStyle} onClick={() => setShowSuggest(true)} title="Suggest a new species">
-            Suggest a new species
+          <button style={primaryGhostBtnStyle} onClick={() => setShowSuggest(true)} title="Suggest a species">
+            Suggest Species
           </button>
         </div>
       </div>
@@ -712,19 +712,19 @@ function AnimalSelectPage() {
       {showSuggest && (
         <div role="dialog" aria-modal="true" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'grid', placeItems: 'center', zIndex: 60 }}>
           <div className="card" style={{ width: 420, padding: 16 }}>
-            <div style={{ fontWeight: 900, marginBottom: 10 }}>Suggest a new species</div>
+            <div style={{ fontWeight: 900, marginBottom: 10 }}>Suggest Species</div>
             <div className="muted" style={{ marginBottom: 10, fontSize: 14 }}>
-              This is a placeholder form. Submit to simulate interest (no backend yet).
+              Share a species you’d like to see supported. This sends a non-committal suggestion.
             </div>
             <div style={{ display: 'grid', gap: 8 }}>
               <label style={{ fontSize: 12, color: 'var(--muted)', fontWeight: 700 }}>Species Name</label>
               <input style={inputStyle} placeholder="e.g., Red Panda" aria-label="Species Name" />
               <label style={{ fontSize: 12, color: 'var(--muted)', fontWeight: 700 }}>Why should we add it?</label>
-              <textarea style={{ ...inputStyle, minHeight: 96 }} placeholder="Brief rationale…" aria-label="Reason" />
+              <textarea style={{ ...inputStyle, minHeight: 96 }} placeholder="Brief rationale…" aria-label="Reason for suggestion" />
             </div>
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 12 }}>
               <button style={primaryGhostBtnStyle} onClick={() => setShowSuggest(false)}>Cancel</button>
-              <button style={primaryBtnStyle} onClick={() => { alert('Thanks! We will review your suggestion.'); setShowSuggest(false); }}>Submit</button>
+              <button style={primaryBtnStyle} onClick={() => { alert('Thanks! We will review your suggestion.'); setShowSuggest(false); }}>Submit Suggestion</button>
             </div>
           </div>
         </div>
