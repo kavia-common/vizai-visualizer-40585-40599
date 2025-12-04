@@ -579,15 +579,7 @@ function AnimalSelectPage() {
           </div>
         </div>
 
-        {/* Current/Recent monitored animal highlight */}
-        <div className="card" style={{ padding: 12, borderRadius: 14 }}>
-          <div style={{ display: 'grid', gap: 8 }}>
-            <div className="muted" style={{ fontSize: 12 }}>
-              Currently Monitored
-            </div>
-            <AnimalProfileCard {...useMockSelectedAnimal()} compact />
-          </div>
-        </div>
+        
 
         <div className="card" style={{ padding: 12, borderRadius: 14, display: 'flex', gap: 8, alignItems: 'center' }}>
           <div style={{ color: 'var(--muted)', fontSize: 12 }}>
