@@ -101,17 +101,12 @@
   box-shadow: var(--shadow);
 }
 
-/* Ensure the brand logo image remains visible and follows responsive brand size */
+/* Restore prior (more modest) logo sizing without forced overrides */
 .nav img[alt="VizAI Logo"] {
-  width: var(--brand-icon-size, 48px) !important;
-  height: var(--brand-icon-size, 48px) !important;
-  display: inline-block !important;
-  object-fit: contain !important;
-  opacity: 1 !important;
-  visibility: visible !important;
-  filter: none !important;
-  max-width: 100% !important;
-  max-height: 56px !important;
+  width: 32px;
+  height: 32px;
+  display: inline-block;
+  object-fit: contain;
 }
 
 .dropdown {

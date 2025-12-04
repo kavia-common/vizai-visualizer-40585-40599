@@ -25,11 +25,11 @@
   /* Gradient */
   --gradient: linear-gradient(135deg, #1e8a5b 0%, #34d399 100%);
 
-  /* Brand area sizing */
+  /* Brand area sizing (restore earlier smaller sizing) */
   --brand-gap: 8px;              /* spacing between logo and text */
-  --brand-icon-size: clamp(32px, 6vw, 48px);       /* responsive: min 32px, typical ~40-48px, capped on very small screens */
-  --brand-text-size: 18px;       /* bold single brand text size */
-  --nav-padding: 16px;
+  --brand-icon-size: 32px;       /* fixed small logo size used previously */
+  --brand-text-size: 16px;       /* slightly smaller brand text */
+  --nav-padding: 12px;
 }
 
 /* Reset and base */
