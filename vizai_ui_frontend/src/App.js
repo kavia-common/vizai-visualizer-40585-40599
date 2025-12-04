@@ -620,7 +620,7 @@ function AnimalSelectPage() {
       <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: 16 }}>
         <LeftFilterSidebar />
         <div style={{ display: 'grid', gap: 16 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
           <div style={{ fontWeight: 900, fontSize: 20, flex: '0 0 auto' }}>Select an Animal to Monitor</div>
           <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, alignItems: 'center' }}>
             <input
@@ -675,7 +675,7 @@ function AnimalSelectPage() {
           </button>
         </div>
       </div>
-
+      </div>
       {showSuggest && (
         <div role="dialog" aria-modal="true" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'grid', placeItems: 'center', zIndex: 60 }}>
           <div className="card" style={{ width: 420, padding: 16 }}>
