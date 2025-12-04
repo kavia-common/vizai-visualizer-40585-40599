@@ -6,6 +6,8 @@ import { loadUser, saveUser, clearUser } from './authStorage';
 // Shared chart helpers and tooltip
 import { computePercentage, conicGradient as conicGradientUtil } from './utils/chartUtils';
 import Tooltip from './components/Tooltip';
+import { FiltersProvider, useFilters } from './context/FiltersContext';
+import LeftFilterSidebar from './components/LeftFilterSidebar';
 
 /**
  * PUBLIC_INTERFACE
@@ -453,47 +455,7 @@ const inputStyle = {
   boxShadow: themeTokens.shadow,
 };
 
-/**
- * Left panel component used on authed pages: includes Species and Date Range per requirement.
- */
-function LeftPanelFilters({ species, setSpecies, dateRange, setDateRange, extraChildren }) {
-  return (
-    <div style={{ display: 'grid', gap: 16 }}>
-      <div className="card" style={{ padding: 16, borderRadius: 16 }}>
-        <div style={{ fontWeight: 800, marginBottom: 10 }}>Global Filters</div>
-        <div style={{ display: 'grid', gap: 12 }}>
-          <div>
-            <label style={{ fontSize: 12, color: 'var(--muted)', fontWeight: 700 }}>Species</label>
-            <select
-              aria-label="Species"
-              value={species}
-              onChange={(e) => setSpecies(e.target.value)}
-              style={{
-                width: '100%',
-                background: 'var(--surface)',
-                color: themeTokens.text,
-                border: `1px solid ${themeTokens.border}`,
-                borderRadius: 12,
-                padding: '8px 12px',
-                fontWeight: 700,
-                boxShadow: themeTokens.shadow,
-                marginTop: 6
-              }}
-            >
-              <option value="Giant Anteater">Giant Anteater</option>
-              <option value="Pangolin" disabled>pangolin (Coming Soon)</option>
-              <option value="Sloth" disabled>sloth (Coming Soon)</option>
-            </select>
-          </div>
-          <div>
-            <DateRangeSelector value={dateRange} onChange={setDateRange} />
-          </div>
-        </div>
-      </div>
-      {extraChildren}
-    </div>
-  );
-}
+/* Deprecated: per-page LeftPanelFilters removed in favor of shared LeftFilterSidebar via FiltersContext */
 
 /**
  * PUBLIC_INTERFACE
@@ -655,7 +617,9 @@ function AnimalSelectPage() {
 
   return (
     <AuthedLayout>
-      <div style={{ display: 'grid', gap: 16 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: 16 }}>
+        <LeftFilterSidebar />
+        <div style={{ display: 'grid', gap: 16 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
           <div style={{ fontWeight: 900, fontSize: 20, flex: '0 0 auto' }}>Select an Animal to Monitor</div>
           <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, alignItems: 'center' }}>
@@ -805,6 +769,7 @@ function SpeciesCard({ data }) {
 function DashboardPage() {
   // Align style and copy with Select Animal: bold headers, helper microcopy, card treatments, button tone
   const [openVideo, setOpenVideo] = useState(false);
+  const { setBehaviorType, setDateRange, apply } = useFilters();
 
   const [durationMode, setDurationMode] = useState('duration'); // count|duration
   const [pieMode, setPieMode] = useState(true); // stacked/pie toggle (mocked)
@@ -858,24 +823,31 @@ function DashboardPage() {
   }
 
   const navigate = useNavigate();
-  const onPieClick = () => navigate('/timeline?behavior=Moving');
+  const onPieClick = (label = 'Moving') => {
+    setBehaviorType(label);
+    // Keep date range unchanged; just ensure apply triggers downstream recompute
+    apply();
+    navigate(`/timeline?behavior=${encodeURIComponent(label)}`);
+  };
 
   return (
     <AuthedLayout>
-      <div style={{ display: 'grid', gap: 16 }}>
-        {/* Page header aligned to Select Animal tone */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginBottom: 4 }}>
-          <div style={{ fontWeight: 900, fontSize: 20, flex: '0 0 auto' }}>Overview — Behavior Insights</div>
-          <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, alignItems: 'center' }}>
-            <button
-              style={primaryGhostBtnStyle}
-              title="Helpful tips"
-              aria-label="Show dashboard tips"
-            >
-              Tips
-            </button>
+      <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: 16 }}>
+        <LeftFilterSidebar />
+        <div style={{ display: 'grid', gap: 16 }}>
+          {/* Page header aligned to Select Animal tone */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginBottom: 4 }}>
+            <div style={{ fontWeight: 900, fontSize: 20, flex: '0 0 auto' }}>Overview — Behavior Insights</div>
+            <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, alignItems: 'center' }}>
+              <button
+                style={primaryGhostBtnStyle}
+                title="Helpful tips"
+                aria-label="Show dashboard tips"
+              >
+                Tips
+              </button>
+            </div>
           </div>
-        </div>
 
         {/* Helper microcopy bar mirroring Select Animal helper tone */}
         <div className="card" style={{ padding: 12, borderRadius: 14, display: 'flex', gap: 8, alignItems: 'center' }}>
@@ -961,7 +933,7 @@ function DashboardPage() {
                     dataMap={mockDurations}
                     total={totalDuration}
                     colorResolver={pieColor}
-                    onSliceClick={(label) => navigate(`/timeline?behavior=${encodeURIComponent(label)}`)}
+                    onSliceClick={(label) => onPieClick(label)}
                     formatLabel={(label, pct) => `${label} — ${pct}%`}
                   />
                 ) : (
@@ -1024,6 +996,7 @@ function DashboardPage() {
             You can continue exploring while previews are open.
           </span>
         </div>
+      </div>
       </div>
       <VideoModal open={openVideo} onClose={() => setOpenVideo(false)} />
     </AuthedLayout>
@@ -1167,28 +1140,39 @@ function TimelinePage() {
   const [count, setCount] = useState(12);
   const [openVideo, setOpenVideo] = useState(false);
   const [searchParams] = useSearchParams();
-  const initialBehavior = searchParams.get('behavior') || 'All';
+  const { behaviorType, setBehaviorType, applyVersion } = useFilters();
+
+  // Honor incoming query pre-filter
+  useEffect(() => {
+    const incoming = searchParams.get('behavior');
+    if (incoming) {
+      setBehaviorType(incoming);
+    }
+  }, [searchParams, setBehaviorType]);
 
   return (
     <AuthedLayout>
-      <TimelineWithLeftPanel
-        initialBehavior={initialBehavior}
-        view={view}
-        setView={setView}
-        zoom={zoom}
-        setZoom={setZoom}
-        count={count}
-        setCount={setCount}
-        openVideo={openVideo}
-        setOpenVideo={setOpenVideo}
-      />
+      <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: 16 }}>
+        <LeftFilterSidebar />
+        <TimelineContent
+          view={view}
+          setView={setView}
+          zoom={zoom}
+          setZoom={setZoom}
+          count={count}
+          setCount={setCount}
+          openVideo={openVideo}
+          setOpenVideo={setOpenVideo}
+          behaviorFilter={behaviorType || 'All'}
+          applyVersion={applyVersion}
+        />
+      </div>
     </AuthedLayout>
   );
 }
 
-function TimelineWithLeftPanel({ initialBehavior, view, setView, zoom, setZoom, count, setCount, openVideo, setOpenVideo }) {
-  const { species, setSpecies, dateRange, setDateRange } = useAuth();
-  const [behaviorFilter, setBehaviorFilter] = useState(initialBehavior);
+function TimelineContent({ view, setView, zoom, setZoom, count, setCount, openVideo, setOpenVideo, behaviorFilter, applyVersion }) {
+  const { species, dateRange } = useAuth();
 
   // Mock behavior segments and events; in future, fetch using species/dateRange/behaviorFilter
   const mockSegments = React.useMemo(() => {
@@ -1204,7 +1188,7 @@ function TimelineWithLeftPanel({ initialBehavior, view, setView, zoom, setZoom, 
       { label: 'Pacing', start: new Date(start.getTime() + 118 * 60 * 1000), end: new Date(start.getTime() + 120 * 60 * 1000), metrics: { loops: 3 } },
     ];
     return { range: { start, end }, items: behaviors };
-  }, []);
+  }, [applyVersion]);
 
   const filteredSegments = React.useMemo(() => {
     if (behaviorFilter === 'All') return mockSegments;
@@ -1235,26 +1219,6 @@ function TimelineWithLeftPanel({ initialBehavior, view, setView, zoom, setZoom, 
   }, [behaviorFilter, filteredEvents, setCount]);
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: 16 }}>
-      <LeftPanelFilters species={species} setSpecies={setSpecies} dateRange={dateRange} setDateRange={setDateRange}
-        extraChildren={
-          <div className="card" style={{ padding: 16, borderRadius: 16 }}>
-            <div style={{ fontWeight: 800, marginBottom: 10 }}>Timeline Filters</div>
-            <div>
-              <label style={{ fontSize: 12, color: 'var(--muted)', fontWeight: 700 }}>Behavior Type</label>
-              <select style={selectStyle} aria-label="Behavior Type" value={behaviorFilter} onChange={(e) => setBehaviorFilter(e.target.value)}>
-                <option>All</option>
-                {BEHAVIOR_CATEGORIES.map(c => (
-                  <option key={c}>{c}</option>
-                ))}
-              </select>
-            </div>
-            <div className="muted" style={{ marginTop: 8, fontSize: 12 }}>
-              Choose a behavior to refine results. You can switch views anytime.
-            </div>
-          </div>
-        }
-      />
       <div style={{ display: 'grid', gap: 12 }}>
         {/* Header aligned to Select Animal style */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
@@ -1308,9 +1272,8 @@ function TimelineWithLeftPanel({ initialBehavior, view, setView, zoom, setZoom, 
           onOpenVideo={() => setOpenVideo(true)}
         />
 
-      </div>
       <VideoModal open={openVideo} onClose={() => setOpenVideo(false)} />
-    </div>
+      </div>
   );
 }
 
@@ -1566,10 +1529,9 @@ function BehaviorEventsList({ events, onOpenVideo }) {
  * ReportsPage with Behavior dropdown, date range, hours filters, and mock PDF/Excel download actions
  */
 function ReportsPage() {
-  const { species, dateRange, setDateRange } = useAuth();
+  const { species } = useAuth();
+  const { behaviorType, dateRange, hoursRange, apply, clear } = useFilters();
   const [type, setType] = useState('Behavior Duration Analysis');
-  const [behavior, setBehavior] = useState('All');
-  const [hours, setHours] = useState('All Day');
   const [openExport, setOpenExport] = useState(false);
   const [downloading, setDownloading] = useState('');
 
@@ -1579,13 +1541,17 @@ function ReportsPage() {
     setDownloading(fmt);
     // mock async
     await new Promise(r => setTimeout(r, 700));
-    alert(`Mock ${fmt.toUpperCase()} export queued.\nType: ${type}\nSpecies: ${species}\nBehavior: ${behavior}\nDate Range: ${dateRange}\nHours: ${hours}`);
+    const start = dateRange?.start ? new Date(dateRange.start).toDateString() : '—';
+    const end = dateRange?.end ? new Date(dateRange.end).toDateString() : '—';
+    const hrs = `${hoursRange?.min ?? '—'} - ${hoursRange?.max ?? '—'}`;
+    alert(`Mock ${fmt.toUpperCase()} export queued.\nType: ${type}\nSpecies: ${species}\nBehavior: ${Array.isArray(behaviorType) ? behaviorType.join(', ') : behaviorType}\nDate Range: ${start} → ${end}\nHours: ${hrs}`);
     setDownloading('');
   };
 
   return (
     <AuthedLayout>
-      <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: 16 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: 16 }}>
+        <LeftFilterSidebar />
         <div className="card" style={{ borderRadius: 16, padding: 16 }}>
           <div style={{ fontWeight: 800, marginBottom: 10 }}>Report Builder</div>
           <div style={{ display: 'grid', gap: 10 }}>
@@ -1601,31 +1567,6 @@ function ReportsPage() {
               {isBehaviorDuration
                 ? 'Shows total time spent in each behavior across selected date range.'
                 : 'Choose a report type to see its description.'}
-            </div>
-            <div>
-              <label style={{ fontSize: 12, color: 'var(--muted)', fontWeight: 700 }}>Date Range</label>
-              <select value={dateRange} onChange={(e) => setDateRange(e.target.value)} style={selectStyle}>
-                <option>Today</option>
-                <option>Last 7 Days</option>
-                <option>Last 30 Days</option>
-                <option>Custom…</option>
-              </select>
-            </div>
-            <div>
-              <label style={{ fontSize: 12, color: 'var(--muted)', fontWeight: 700 }}>Behavior</label>
-              <select value={behavior} onChange={(e) => setBehavior(e.target.value)} style={selectStyle}>
-                <option>All</option>
-                {BEHAVIOR_CATEGORIES.map(c => <option key={c}>{c}</option>)}
-              </select>
-            </div>
-            <div>
-              <label style={{ fontSize: 12, color: 'var(--muted)', fontWeight: 700 }}>Hours</label>
-              <select value={hours} onChange={(e) => setHours(e.target.value)} style={selectStyle}>
-                <option>All Day</option>
-                <option>Daytime</option>
-                <option>Nighttime</option>
-                <option>Custom…</option>
-              </select>
             </div>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               <button style={primaryBtnStyle} onClick={() => setOpenExport(true)}>Export</button>
@@ -1650,7 +1591,17 @@ function ReportsPage() {
             description={isBehaviorDuration ? '' : 'Preview placeholder for selected type and parameters.'}
           />
           <div style={{ marginTop: 12, fontSize: 12, color: 'var(--muted)' }}>
-            Filters applied — Species: <b>{species}</b>, Behavior: <b>{behavior}</b>, Date Range: <b>{dateRange}</b>, Hours: <b>{hours}</b>
+            {(() => {
+              const start = dateRange?.start ? new Date(dateRange.start).toDateString() : '—';
+              const end = dateRange?.end ? new Date(dateRange.end).toDateString() : '—';
+              const hrs = `${hoursRange?.min ?? '—'} - ${hoursRange?.max ?? '—'}`;
+              const bhv = Array.isArray(behaviorType) ? behaviorType.join(', ') : behaviorType || 'All';
+              return (
+                <>
+                  Filters applied — Species: <b>{species}</b>, Behavior: <b>{bhv}</b>, Date Range: <b>{start} → {end}</b>, Hours: <b>{hrs}</b>
+                </>
+              );
+            })()}
           </div>
         </div>
       </div>
@@ -1661,7 +1612,7 @@ function ReportsPage() {
           <div className="card" style={{ width: 420, padding: 16 }}>
             <div style={{ fontWeight: 900, marginBottom: 10 }}>Export Report</div>
             <div style={{ color: '#D1D5DB', marginBottom: 16 }}>
-              Your report "{type}" for {dateRange} is being generated. We will notify you when it’s ready.
+              Your report "{type}" for the selected period is being generated. We will notify you when it’s ready.
             </div>
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
               <button style={primaryGhostBtnStyle} onClick={() => setOpenExport(false)}>Close</button>
@@ -1685,29 +1636,31 @@ function AuthedLayout({ children }) {
   const { connLost, setConnLost } = useAuth();
 
   return (
-    <div style={{ minHeight: '100vh', background: themeTokens.background, color: themeTokens.text }}>
-      <ConnectionBanner
-        visible={true}
-        message={connLost ? 'Connection Status: Offline – Check your network' : 'Connection Status: Online'}
-      />
-      <NavBar />
-      <div style={{ padding: 16, maxWidth: 1200, margin: '0 auto' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-          <span title="Project status" style={{ fontSize: 12, color: 'var(--muted)' }}>
-            Environment: {process.env.REACT_APP_NODE_ENV || 'development'} • API: {process.env.REACT_APP_API_BASE || 'mock'}
-          </span>
-        </div>
-        {children}
-        <div style={{ marginTop: 16 }}>
-          <button style={primaryGhostBtnStyle} onClick={() => setConnLost(v => !v)}>
-            Toggle Connection Status
-          </button>
-          <span style={{ marginLeft: 8, color: 'var(--muted)', fontSize: 12 }}>
-            Tip: Behavior terms remain consistent across Dashboard, Timeline, and Reports for easy analysis.
-          </span>
+    <FiltersProvider>
+      <div style={{ minHeight: '100vh', background: themeTokens.background, color: themeTokens.text }}>
+        <ConnectionBanner
+          visible={true}
+          message={connLost ? 'Connection Status: Offline – Check your network' : 'Connection Status: Online'}
+        />
+        <NavBar />
+        <div style={{ padding: 16, maxWidth: 1200, margin: '0 auto' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+            <span title="Project status" style={{ fontSize: 12, color: 'var(--muted)' }}>
+              Environment: {process.env.REACT_APP_NODE_ENV || 'development'} • API: {process.env.REACT_APP_API_BASE || 'mock'}
+            </span>
+          </div>
+          {children}
+          <div style={{ marginTop: 16 }}>
+            <button style={primaryGhostBtnStyle} onClick={() => setConnLost(v => !v)}>
+              Toggle Connection Status
+            </button>
+            <span style={{ marginLeft: 8, color: 'var(--muted)', fontSize: 12 }}>
+              Tip: Behavior terms remain consistent across Dashboard, Timeline, and Reports for easy analysis.
+            </span>
+          </div>
         </div>
       </div>
-    </div>
+    </FiltersProvider>
   );
 }
 
