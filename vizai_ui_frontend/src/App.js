@@ -1634,10 +1634,14 @@ function ReportsPage() {
  * Adds left panel layout option and stores species/date in auth context for app-wide usage.
  */
 function AuthedLayout({ children }) {
+  /**
+   * Note: FiltersProvider is applied at route level in App() to guarantee that
+   * all authenticated pages (Dashboard, Timeline, Reports, Select Animal) are wrapped.
+   * Do not wrap another FiltersProvider here to avoid multiple nested contexts.
+   */
   const { connLost, setConnLost } = useAuth();
 
   return (
-    <FiltersProvider>
       <div style={{ minHeight: '100vh', background: themeTokens.background, color: themeTokens.text }}>
         <ConnectionBanner
           visible={true}
@@ -1661,7 +1665,6 @@ function AuthedLayout({ children }) {
           </div>
         </div>
       </div>
-    </FiltersProvider>
   );
 }
 
@@ -1717,22 +1720,30 @@ function App() {
           <Route path="/register" element={<RegistrationPage />} />
           <Route path="/select-animal" element={
             <ProtectedRoute>
-              <AnimalSelectPage />
+              <FiltersProvider>
+                <AnimalSelectPage />
+              </FiltersProvider>
             </ProtectedRoute>
           } />
           <Route path="/dashboard" element={
             <ProtectedRoute>
-              <DashboardPage />
+              <FiltersProvider>
+                <DashboardPage />
+              </FiltersProvider>
             </ProtectedRoute>
           } />
           <Route path="/timeline" element={
             <ProtectedRoute>
-              <TimelinePage />
+              <FiltersProvider>
+                <TimelinePage />
+              </FiltersProvider>
             </ProtectedRoute>
           } />
           <Route path="/reports" element={
             <ProtectedRoute requiredRoles={['Researcher','Field Observer','Admin']}>
-              <ReportsPage />
+              <FiltersProvider>
+                <ReportsPage />
+              </FiltersProvider>
             </ProtectedRoute>
           } />
           <Route path="/" element={<Navigate to="/login" replace />} />
