@@ -1190,10 +1190,49 @@ function TimelineWithLeftPanel({ initialBehavior, view, setView, zoom, setZoom, 
   const { species, setSpecies, dateRange, setDateRange } = useAuth();
   const [behaviorFilter, setBehaviorFilter] = useState(initialBehavior);
 
+  // Mock behavior segments and events; in future, fetch using species/dateRange/behaviorFilter
+  const mockSegments = React.useMemo(() => {
+    // Build a mock 2-hour window starting now - 2h to now, with segments
+    const end = new Date();
+    const start = new Date(end.getTime() - 2 * 60 * 60 * 1000);
+    const behaviors = [
+      { label: 'Moving', start: new Date(start.getTime() + 5 * 60 * 1000), end: new Date(start.getTime() + 18 * 60 * 1000), metrics: { confidence: 0.91 } },
+      { label: 'Scratching', start: new Date(start.getTime() + 22 * 60 * 1000), end: new Date(start.getTime() + 28 * 60 * 1000), metrics: { intensity: 'low' } },
+      { label: 'Recumbent', start: new Date(start.getTime() + 30 * 60 * 1000), end: new Date(start.getTime() + 75 * 60 * 1000), metrics: {} },
+      { label: 'Non-Recumbent', start: new Date(start.getTime() + 80 * 60 * 1000), end: new Date(start.getTime() + 95 * 60 * 1000), metrics: {} },
+      { label: 'Moving', start: new Date(start.getTime() + 100 * 60 * 1000), end: new Date(start.getTime() + 116 * 60 * 1000), metrics: { speed: '1.2 m/s' } },
+      { label: 'Pacing', start: new Date(start.getTime() + 118 * 60 * 1000), end: new Date(start.getTime() + 120 * 60 * 1000), metrics: { loops: 3 } },
+    ];
+    return { range: { start, end }, items: behaviors };
+  }, []);
+
+  const filteredSegments = React.useMemo(() => {
+    if (behaviorFilter === 'All') return mockSegments;
+    return {
+      range: mockSegments.range,
+      items: mockSegments.items.filter(s => s.label === behaviorFilter)
+    };
+  }, [mockSegments, behaviorFilter]);
+
+  const mockEvents = React.useMemo(() => {
+    // Derive events at segment starts for demo
+    return mockSegments.items.map((seg, idx) => ({
+      id: idx + 1,
+      ts: seg.start,
+      label: seg.label,
+      metrics: seg.metrics || {}
+    }));
+  }, [mockSegments]);
+
+  const filteredEvents = React.useMemo(() => {
+    if (behaviorFilter === 'All') return mockEvents;
+    return mockEvents.filter(e => e.label === behaviorFilter);
+  }, [mockEvents, behaviorFilter]);
+
   useEffect(() => {
     // mock re-count when behavior changes
-    setCount(behaviorFilter === 'All' ? 12 : 7);
-  }, [behaviorFilter, setCount]);
+    setCount(filteredEvents.length);
+  }, [behaviorFilter, filteredEvents, setCount]);
 
   return (
     <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: 16 }}>
@@ -1249,15 +1288,26 @@ function TimelineWithLeftPanel({ initialBehavior, view, setView, zoom, setZoom, 
         {/* Helper microcopy bar mirroring Select Animal tip card */}
         <div className="card" style={{ padding: 12, borderRadius: 14, display: 'flex', gap: 8, alignItems: 'center' }}>
           <div style={{ color: 'var(--muted)', fontSize: 12 }}>
-            Tip: Open any event to preview video. Annotations can be toggled in the modal.
+            Tip: Hover the timeline to see behavior durations. Open any event to preview video.
           </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: view === 'grid' ? 'repeat(auto-fill, minmax(240px,1fr))' : '1fr', gap: 12 }}>
-          {Array.from({ length: count }).map((_, i) => (
-            <BehaviorEventCard key={i} onOpenVideo={() => setOpenVideo(true)} />
-          ))}
-        </div>
+        {/* Behavior Timeline visualization */}
+        <BehaviorTimeline
+          range={filteredSegments.range}
+          items={filteredSegments.items}
+          zoom={zoom}
+          species={species}
+          dateRange={dateRange}
+          behaviorFilter={behaviorFilter}
+        />
+
+        {/* Events list */}
+        <BehaviorEventsList
+          events={filteredEvents}
+          onOpenVideo={() => setOpenVideo(true)}
+        />
+
       </div>
       <VideoModal open={openVideo} onClose={() => setOpenVideo(false)} />
     </div>
@@ -1296,6 +1346,216 @@ function BehaviorEventCard({ onOpenVideo }) {
           <button style={primaryGhostBtnStyle} onClick={onOpenVideo} title="Preview video">View Video</button>
           <button style={primaryGhostBtnStyle} title="Open details">Open</button>
         </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * PUBLIC_INTERFACE
+ * BehaviorTimeline: horizontal time axis with behavior segments.
+ * - Accepts range {start, end} and items [{label,start,end,metrics}]
+ * - Computes durations and renders segments with Neon Fun accents.
+ * - Hover tooltips show label, duration hh:mm:ss, and available metrics.
+ */
+function BehaviorTimeline({ range, items, zoom = 100, species, dateRange, behaviorFilter }) {
+  const [hover, setHover] = useState(null);
+  const containerRef = useRef(null);
+
+  // Helpers
+  function fmtHMS(ms) {
+    const tot = Math.max(0, Math.floor(ms / 1000));
+    const h = Math.floor(tot / 3600);
+    const m = Math.floor((tot % 3600) / 60);
+    const s = tot % 60;
+    return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  }
+  function labelColor(label) {
+    const idx = Math.max(0, BEHAVIOR_CATEGORIES.indexOf(label));
+    const palette = [
+      '#10B981', '#F59E0B', '#0EA5E9', '#6366F1', '#F43F5E', '#14B8A6'
+    ];
+    return palette[idx % palette.length];
+  }
+
+  if (!range || !range.start || !range.end) {
+    return <EmptyState title="No timeline data" description="Try adjusting filters or date range." />;
+  }
+
+  const totalMs = Math.max(1, (range.end.getTime() - range.start.getTime()));
+  const zoomScale = Math.max(0.5, Math.min(2, zoom / 100));
+  const hourCount = Math.ceil(totalMs / (60 * 60 * 1000));
+
+  const onEnter = (e, seg) => {
+    const rect = containerRef.current?.getBoundingClientRect();
+    setHover({
+      x: e.clientX,
+      y: e.clientY,
+      seg
+    });
+  };
+  const onMove = (e) => {
+    if (!hover) return;
+    setHover(h => ({ ...h, x: e.clientX, y: e.clientY }));
+  };
+  const onLeave = () => setHover(null);
+
+  const axisColor = '#374151'; // readable text per theme
+  const subtleBg = 'rgba(55,65,81,0.06)';
+
+  return (
+    <div className="card" style={{ borderRadius: 16, padding: 16 }}>
+      <div style={{ fontWeight: 800, marginBottom: 8 }}>Behavior Timeline</div>
+      <div
+        ref={containerRef}
+        onMouseMove={onMove}
+        onMouseLeave={onLeave}
+        style={{
+          position: 'relative',
+          border: `1px solid ${themeTokens.border}`,
+          borderRadius: 12,
+          background: subtleBg,
+          padding: 12,
+          overflowX: 'auto'
+        }}
+        role="region"
+        aria-label="Behavior timeline with time axis"
+      >
+        {/* Axis */}
+        <div style={{ position: 'relative', height: 40, marginBottom: 8 }}>
+          <div style={{ position: 'absolute', left: 0, right: 0, top: 20, height: 2, background: axisColor, opacity: 0.2 }} />
+          <div style={{ position: 'absolute', left: 0, right: 0, top: 0, display: 'flex' }}>
+            {Array.from({ length: Math.max(2, hourCount + 1) }).map((_, i) => {
+              const t = new Date(range.start.getTime() + i * 60 * 60 * 1000);
+              const label = `${String(t.getHours()).padStart(2,'0')}:00`;
+              return (
+                <div key={i} style={{ minWidth: 160 * zoomScale, textAlign: 'left', color: axisColor, fontSize: 12 }}>
+                  | {label}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+        {/* Segments */}
+        <div style={{ position: 'relative', height: 36 }}>
+          {items.map((seg, idx) => {
+            const startFrac = (seg.start.getTime() - range.start.getTime()) / totalMs;
+            const endFrac = (seg.end.getTime() - range.start.getTime()) / totalMs;
+            const leftPx = Math.max(0, startFrac * hourCount * 160 * zoomScale);
+            const widthPx = Math.max(3, (endFrac - startFrac) * hourCount * 160 * zoomScale);
+            const color = labelColor(seg.label);
+            const durationMs = seg.end.getTime() - seg.start.getTime();
+            return (
+              <div
+                key={idx}
+                onMouseEnter={(e) => onEnter(e, seg)}
+                title={`${seg.label} — ${fmtHMS(durationMs)}`}
+                style={{
+                  position: 'absolute',
+                  left: leftPx,
+                  top: 6,
+                  height: 24,
+                  width: widthPx,
+                  borderRadius: 8,
+                  background: color,
+                  boxShadow: themeTokens.shadow,
+                  border: `1px solid ${themeTokens.border}`,
+                  cursor: 'default'
+                }}
+                aria-label={`${seg.label} from ${seg.start.toLocaleTimeString()} to ${seg.end.toLocaleTimeString()}`}
+              />
+            );
+          })}
+        </div>
+        {/* Tooltip */}
+        <Tooltip
+          visible={Boolean(hover)}
+          x={hover?.x || 0}
+          y={hover?.y || 0}
+          label={hover?.seg?.label || ''}
+          detail={
+            hover?.seg
+              ? (() => {
+                  const dms = hover.seg.end.getTime() - hover.seg.start.getTime();
+                  const dur = (function(ms){ const s=Math.floor(ms/1000); const h=Math.floor(s/3600); const m=Math.floor((s%3600)/60); const ss=s%60; return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(ss).padStart(2,'0')}`; })(dms);
+                  const metrics = hover.seg.metrics || {};
+                  const metStr = Object.keys(metrics).length ? ` • ${Object.entries(metrics).map(([k,v])=>`${k}: ${v}`).join(', ')}` : '';
+                  return `Duration: ${dur}${metStr}`;
+                })()
+              : ''
+          }
+        />
+      </div>
+      <div className="muted" style={{ fontSize: 12, marginTop: 8 }}>
+        Showing species: <b>{species}</b>, Date Range: <b>{dateRange}</b>{' '}
+        {behaviorFilter && behaviorFilter !== 'All' ? <>• Behavior: <b>{behaviorFilter}</b></> : null}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * PUBLIC_INTERFACE
+ * BehaviorEventsList: scrollable list of events with badges and metadata.
+ * - Accepts events [{id, ts, label, metrics}]
+ * - Renders readable timestamp, behavior badge, and optional metrics chips.
+ */
+function BehaviorEventsList({ events, onOpenVideo }) {
+  const TEXT = '#374151';
+  const BG = 'rgba(55,65,81,0.04)';
+  const PRIMARY = '#10B981';
+
+  if (!events || events.length === 0) {
+    return (
+      <div className="card" style={{ borderRadius: 16, padding: 16 }}>
+        <div style={{ fontWeight: 800, marginBottom: 8 }}>Behavior Events</div>
+        <EmptyState title="No behavior events in this period." description="Try expanding your date range or clearing filters." />
+      </div>
+    );
+  }
+
+  return (
+    <div className="card" style={{ borderRadius: 16, padding: 16 }}>
+      <div style={{ fontWeight: 800, marginBottom: 8 }}>Behavior Events</div>
+      <div style={{
+        maxHeight: 280,
+        overflowY: 'auto',
+        border: `1px solid ${themeTokens.border}`,
+        borderRadius: 12,
+        background: BG
+      }}>
+        {events.map((e, i) => {
+          const timeStr = e.ts instanceof Date ? e.ts.toLocaleString() : String(e.ts);
+          const metricsEntries = Object.entries(e.metrics || {});
+          return (
+            <div key={e.id || i} style={{
+              display: 'grid',
+              gridTemplateColumns: '1fr auto',
+              gap: 8,
+              padding: '10px 12px',
+              borderBottom: i === events.length - 1 ? 'none' : `1px solid ${themeTokens.border}`,
+              background: 'var(--surface)'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                <span className="badge" style={{ background: 'rgba(16,185,129,0.12)', color: PRIMARY }}>
+                  {e.label}
+                </span>
+                <span className="badge" style={{ background: 'rgba(55,65,81,0.10)', color: TEXT }}>
+                  {timeStr}
+                </span>
+                {metricsEntries.map(([k, v]) => (
+                  <span key={k} className="badge" style={{ background: 'rgba(245,158,11,0.12)', color: '#F59E0B' }}>
+                    {k}: {String(v)}
+                  </span>
+                ))}
+              </div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button style={primaryGhostBtnStyle} onClick={onOpenVideo} title="Preview video">View Video</button>
+                <button style={primaryGhostBtnStyle} title="Open details">Open</button>
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
