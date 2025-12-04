@@ -103,9 +103,9 @@ export default function BehaviorExplorer({
 
       {/* Summary cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: 12, marginBottom: 12 }}>
-        <SummaryCard title="Event Count" value={data.stats.count} badge="events" />
-        <SummaryCard title="Total Duration" value={formatHhMm(data.stats.totalMins)} badge="mins" />
-        <SummaryCard title="Avg Duration" value={formatMmSs(data.stats.avgSecs)} badge="per event" />
+        <SummaryCard title="Event Count" value={data.stats.count} />
+        <SummaryCard title="Total Duration" value={formatHhMm(data.stats.totalMins)} />
+        <SummaryCard title="Avg Duration" value={formatMmSs(data.stats.avgSecs)} />
       </div>
 
       {/* Content: mini trend + distribution chips */}
@@ -139,6 +139,7 @@ export default function BehaviorExplorer({
 }
 
 function SummaryCard({ title, value }) {
+  // Render plain text values with no chip/badge styling
   return (
     <div className="card" style={{ padding: 12, borderRadius: 14 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>

@@ -1512,7 +1512,7 @@ function BehaviorEventsList({ events, onOpenVideo }) {
                   }}>
                     Thumbnail
                   </div>
-                  {/* metadata chips */}
+                  {/* metadata plain text (no chips) */}
                   {metricsEntries.length === 0 ? (
                     <span style={{ color: TEXT }}>
                       Confidence: —

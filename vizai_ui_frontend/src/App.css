@@ -63,7 +63,7 @@
   border-radius: 0;
   background: transparent;
   color: inherit;
-  font-weight: 400; /* reduce emphasis to look like normal text */
+  font-weight: 400; /* render as normal text */
   font-size: 12px;
 }
 
