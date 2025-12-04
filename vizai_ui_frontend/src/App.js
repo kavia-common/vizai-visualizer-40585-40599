@@ -53,26 +53,7 @@ export const useAuth = () => useContext(AuthContext);
 
 
 
-/**
- * PUBLIC_INTERFACE
- * ConnectionBanner: togglable banner for demo
- */
-function ConnectionBanner({ visible, message }) {
-  if (!visible) return null;
-  return (
-    <div role="status" style={{
-      width: '100%',
-      background: 'rgba(220,38,38,0.12)',
-      color: themeTokens.error,
-      padding: '8px 16px',
-      textAlign: 'center',
-      fontWeight: 600,
-      borderBottom: `1px solid ${themeTokens.border}`
-    }}>
-      {message}
-    </div>
-  );
-}
+
 
 
 
@@ -1617,15 +1598,10 @@ function ReportsPage() {
 function AuthedLayout() {
   /**
    * FiltersProvider is applied once at the routes level; do not re-wrap here.
+   * Connection status banner has been removed per request.
    */
-  const { connLost, setConnLost } = useAuth();
-
   return (
     <div style={{ minHeight: '100vh', background: themeTokens.background, color: themeTokens.text }}>
-      <ConnectionBanner
-        visible={true}
-        message={connLost ? 'Connection Status: Offline – Check your network' : 'Connection Status: Online'}
-      />
       <NavBar />
       <div style={{ padding: 16, maxWidth: 1200, margin: '0 auto' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
@@ -1635,10 +1611,7 @@ function AuthedLayout() {
         </div>
         <Outlet />
         <div style={{ marginTop: 16 }}>
-          <button style={primaryGhostBtnStyle} onClick={() => setConnLost(v => !v)}>
-            Toggle Connection Status
-          </button>
-          <span style={{ marginLeft: 8, color: 'var(--muted)', fontSize: 12 }}>
+          <span style={{ color: 'var(--muted)', fontSize: 12 }}>
             Tip: Behavior terms remain consistent across Dashboard, Timeline, and Reports for easy analysis.
           </span>
         </div>
@@ -1669,7 +1642,6 @@ function ProtectedRoute({ children, requiredRoles }) {
 function App() {
   const [authed, setAuthed] = useState(false);
   const [user, setUser] = useState(null); // { email, role }
-  const [connLost, setConnLost] = useState(false);
   const [dateRange, setDateRange] = useState('Last 7 Days');
   const [species, setSpecies] = useState('Giant Anteater');
 
@@ -1686,10 +1658,9 @@ function App() {
   const authValue = useMemo(() => ({
     authed, setAuthed,
     user, setUser,
-    connLost, setConnLost,
     dateRange, setDateRange,
     species, setSpecies
-  }), [authed, user, connLost, dateRange, species]);
+  }), [authed, user, dateRange, species]);
 
   return (
     <AuthContext.Provider value={authValue}>
