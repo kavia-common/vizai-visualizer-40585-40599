@@ -819,9 +819,10 @@ function DashboardPage() {
             <AnimalProfileCard
               {...(function(){
                 const now = new Date();
+                // Replace individual name with species-level label to avoid showing 'Zara'
                 return {
                   photo: '/assets/animals/anteater-01.jpg',
-                  name: 'Zara',
+                  name: 'Giant Anteater',
                   age: '5y',
                   sex: 'F',
                   enclosure: 'Savannah - E12',
