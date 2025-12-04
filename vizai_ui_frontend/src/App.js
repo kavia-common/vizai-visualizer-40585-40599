@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState, createContext, useContext, useRef 
 import { BrowserRouter, Routes, Route, Navigate, Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import './index.css';
 import './App.css';
+import { loadUser, saveUser, clearUser } from './authStorage';
 
 /**
  * PUBLIC_INTERFACE
@@ -167,7 +168,7 @@ function Logo() {
 function NavBar() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { authed } = useAuth();
+  const { authed, setAuthed, setUser, user } = useAuth();
 
   const isActive = (path) => location.pathname === path;
   const tabStyle = (active) => ({
@@ -235,8 +236,21 @@ function NavBar() {
           border: `1px solid ${themeTokens.border}`, borderRadius: 12, background: 'var(--surface)', boxShadow: themeTokens.shadow
         }}>
           <div style={{ width: 8, height: 8, borderRadius: 999, background: '#22C55E' }} />
-          <span style={{ fontWeight: 700 }}>user@viz.ai</span>
+          <span style={{ fontWeight: 700 }}>{user?.email || 'user@viz.ai'}</span>
         </div>
+        <button
+          onClick={() => {
+            clearUser();
+            setUser(null);
+            setAuthed(false);
+            navigate('/login', { replace: true });
+          }}
+          style={primaryGhostBtnStyle}
+          title="Sign out"
+          aria-label="Sign out"
+        >
+          Sign Out
+        </button>
       </div>
     </div>
   );
@@ -505,8 +519,10 @@ function RegistrationPage() {
       setError('Passwords do not match.');
       return;
     }
-    // Persist in context (mock). Role is used internally but not shown post-login.
-    setUser({ email, role });
+    // Persist in context and localStorage (mock). Role is used internally but not shown post-login.
+    const u = { email, role };
+    setUser(u);
+    saveUser(u);
     setAuthed(true);
     navigate('/select-animal', { replace: true });
   };
@@ -569,8 +585,13 @@ function LoginPage() {
       return;
     }
     setError('');
-    // Login uses stored role internally if available; do not prompt for role here
-    setUser((prev) => prev?.role ? { ...(prev || {}), email } : { email, role: 'Researcher' });
+    // Use existing stored role if present; otherwise default to Researcher for demo.
+    let roleToUse = 'Researcher';
+    const stored = loadUser();
+    if (stored?.role) roleToUse = stored.role;
+    const u = { email, role: roleToUse };
+    setUser(u);
+    saveUser(u);
     setAuthed(true);
     navigate('/select-animal', { replace: true });
   };
@@ -1350,9 +1371,17 @@ function AuthedLayout({ children }) {
  * PUBLIC_INTERFACE
  * Root App with Router and protected routes
  */
-function ProtectedRoute({ children }) {
-  const { authed } = useAuth();
+function ProtectedRoute({ children, requiredRoles }) {
+  const { authed, user } = useAuth();
   if (!authed) return <Navigate to="/login" replace />;
+  // If specific roles are required, check internally; role is not shown in UI
+  if (requiredRoles && requiredRoles.length > 0) {
+    const ok = user?.role && requiredRoles.includes(user.role);
+    if (!ok) {
+      // Navigate to a safe default; keep UX friendly
+      return <Navigate to="/dashboard" replace />;
+    }
+  }
   return children;
 }
 
@@ -1365,6 +1394,12 @@ function App() {
   const [species, setSpecies] = useState('Giant Anteater');
 
   useEffect(() => {
+    // Attempt to restore prior session
+    const existing = loadUser();
+    if (existing?.email) {
+      setUser(existing);
+      setAuthed(true);
+    }
     // Theme is controlled via CSS variables; no explicit attribute required.
   }, []);
 
@@ -1398,7 +1433,7 @@ function App() {
             </ProtectedRoute>
           } />
           <Route path="/reports" element={
-            <ProtectedRoute>
+            <ProtectedRoute requiredRoles={['Researcher','Field Observer','Admin']}>
               <ReportsPage />
             </ProtectedRoute>
           } />
