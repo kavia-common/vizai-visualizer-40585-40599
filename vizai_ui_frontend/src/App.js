@@ -537,9 +537,8 @@ function AnimalSelectPage() {
     { key: 'sloth', name: 'Sloth', subtitle: 'Coming Soon', active: false, expected: 'Expected: Sep 2025', img: '/assets/species/sloth.png' },
   ];
 
-  // Filter out Giant Anteater entirely from UI
+  // Restore Giant Anteater entry; only filter by search query
   const filtered = speciesList
-    .filter(s => s.name !== 'Giant Anteater')
     .filter(s => s.name.toLowerCase().includes(query.toLowerCase()));
 
   const EmptySpecies = (
@@ -631,6 +630,8 @@ function AnimalSelectPage() {
 }
 
 function SpeciesCard({ data }) {
+  const navigate = useNavigate();
+  const { setSpecies } = useAuth();
   const { name, subtitle, active, expected, img } = data;
   const imgFallback = (
     <div style={{
@@ -673,14 +674,22 @@ function SpeciesCard({ data }) {
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
         {active ? (
           <>
-            <Link
-              to="/dashboard"
-              style={{ ...primaryBtnStyle, textDecoration: 'none' }}
+            <button
+              onClick={() => { setSpecies(name); navigate('/dashboard'); }}
+              style={primaryBtnStyle}
               title="Begin tracking this animal now"
               aria-label={`Start Monitoring ${name}`}
             >
               Start Monitoring
-            </Link>
+            </button>
+            <button
+              onClick={() => { setSpecies(name); }}
+              style={primaryGhostBtnStyle}
+              title="Select this species"
+              aria-label={`Select ${name}`}
+            >
+              Select
+            </button>
             <button style={primaryGhostBtnStyle} title="Open details" aria-label={`View Details for ${name}`}>View Details</button>
           </>
         ) : (
@@ -791,9 +800,21 @@ function DashboardPage() {
                 {tabBtn('explorer', 'Behavior Explorer')}
               </div>
             </div>
-            {/* Selected animal summary removed per requirement to hide 'Giant Anteater' row.
-                Keep spacing tidy with a small placeholder gap. */}
-            <div style={{ height: 0 }} aria-hidden />
+            <div className="muted" style={{ fontSize: 12 }}>
+              Selected species: <b>{useAuth()?.species || 'None'}</b>
+            </div>
+            {/* Selected animal summary restored for Giant Anteater (compact) */}
+            <div style={{ display: 'grid', gap: 8 }}>
+              <AnimalProfileCard
+                name="Giant Anteater"
+                age="7y"
+                sex="F"
+                enclosure="Savannah - E12"
+                status="Active"
+                lastUpdated={new Date()}
+                compact
+              />
+            </div>
           </div>
 
 
