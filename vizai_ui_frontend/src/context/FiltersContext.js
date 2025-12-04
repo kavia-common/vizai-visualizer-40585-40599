@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useMemo, useState } from 'react';
+import React, { createContext, useContext, useMemo, useState, useCallback } from 'react';
 
 // PUBLIC_INTERFACE
 export const FiltersContext = createContext(null);
@@ -82,13 +82,13 @@ export function FiltersProvider({ children, initial = {} }) {
     setApplyVersion(v => v + 1);
   };
 
-  const setPeriodAndRange = (p) => {
+  const setPeriodAndRange = useCallback((p) => {
     setPeriod(p);
     if (p !== 'custom') {
       setDateRange(computePresetRange(p));
     }
     setApplyVersion(v => v + 1);
-  };
+  }, [setPeriod, setDateRange]);
 
   const value = useMemo(() => ({
     behaviorType, setBehaviorType,
@@ -98,7 +98,7 @@ export function FiltersProvider({ children, initial = {} }) {
     period, setPeriod: setPeriodAndRange,
     apply, clear,
     applyVersion,
-  }), [behaviorType, dateRange, hoursRange, selectedDate, period, applyVersion]);
+  }), [behaviorType, dateRange, hoursRange, selectedDate, period, applyVersion, setPeriodAndRange]);
 
   return (
     <FiltersContext.Provider value={value}>

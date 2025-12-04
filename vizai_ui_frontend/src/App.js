@@ -40,8 +40,7 @@ const featureFlags = (() => {
     return {};
   }
 })();
-// touch featureFlags to avoid unused warning; can drive gates later
-const __featureFlagsInUse = !!featureFlags;
+
 
 /**
  * PUBLIC_INTERFACE
@@ -52,35 +51,7 @@ const AuthContext = createContext(null);
 // PUBLIC_INTERFACE
 export const useAuth = () => useContext(AuthContext);
 
-/**
- * PUBLIC_INTERFACE
- * StatusBadge component: Active, Resting, Feeding
- */
-function StatusBadge({ status }) {
-  /** Badge uses primary/secondary palette via CSS variables */
-  const map = {
-    Active: { bg: 'rgba(30,138,91,0.12)', color: themeTokens.primary },
-    Resting: { bg: 'rgba(107,114,128,0.18)', color: 'var(--muted)' },
-    Feeding: { bg: 'rgba(245,158,11,0.18)', color: themeTokens.secondary },
-  };
-  const cfg = map[status] || map.Active;
-  return (
-    <span
-      className="badge"
-      style={{
-        background: cfg.bg,
-        color: cfg.color,
-      }}
-      aria-label={`status ${status}`}
-      title={`Behavior status: ${status}`}
-    >
-      <span style={{
-        width: 8, height: 8, borderRadius: 999, background: cfg.color
-      }} />
-      {status}
-    </span>
-  );
-}
+
 
 /**
  * PUBLIC_INTERFACE
@@ -103,36 +74,7 @@ function ConnectionBanner({ visible, message }) {
   );
 }
 
-/**
- * PUBLIC_INTERFACE
- * DateRangeSelector: Today, Last 7 Days, Last 30 Days, Custom…
- */
-function DateRangeSelector({ value, onChange }) {
-  const options = ['Today', 'Last 7 Days', 'Last 30 Days', 'Custom…'];
-  return (
-    <div style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>
-      <span style={{ color: 'var(--muted)', fontSize: 12 }}>Date Range</span>
-      <select
-        aria-label="Date Range"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        style={{
-          background: themeTokens.surface,
-          color: themeTokens.text,
-          border: `1px solid ${themeTokens.border}`,
-          borderRadius: 12,
-          padding: '8px 12px',
-          fontWeight: 600,
-          boxShadow: themeTokens.shadow,
-        }}
-      >
-        {options.map(opt => (
-          <option key={opt} value={opt}>{opt}</option>
-        ))}
-      </select>
-    </div>
-  );
-}
+
 
 /**
  * Layout components
@@ -1569,7 +1511,7 @@ function BehaviorEventsList({ events, onOpenVideo }) {
  */
 function ReportsPage() {
   const { species } = useAuth();
-  const { behaviorType, dateRange, hoursRange, apply, clear } = useFilters();
+  const { behaviorType, dateRange, hoursRange } = useFilters();
   const [type, setType] = useState('Behavior Duration Analysis');
   const [openExport, setOpenExport] = useState(false);
   const [downloading, setDownloading] = useState('');
