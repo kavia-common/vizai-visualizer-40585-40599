@@ -3,6 +3,9 @@ import { BrowserRouter, Routes, Route, Navigate, Link, useLocation, useNavigate,
 import './index.css';
 import './App.css';
 import { loadUser, saveUser, clearUser } from './authStorage';
+// Shared chart helpers and tooltip
+import { computePercentage, conicGradient as conicGradientUtil } from './utils/chartUtils';
+import Tooltip from './components/Tooltip';
 
 /**
  * PUBLIC_INTERFACE
@@ -850,18 +853,8 @@ function DashboardPage() {
   function pieColor(i) { return piePalette[i % piePalette.length]; }
   function barColor(i) { return barPalette[i % barPalette.length]; }
   function conicGradientFromData(keys, dataMap, total) {
-    let acc = 0;
-    const parts = [];
-    keys.forEach((k, idx) => {
-      const mins = (dataMap[k] || 0);
-      const frac = total ? mins / total : 0;
-      const start = acc * 100;
-      const end = (acc + frac) * 100;
-      const color = pieColor(idx);
-      parts.push(`${color} ${start}% ${end}%`);
-      acc += frac;
-    });
-    return parts.length ? `conic-gradient(${parts.join(', ')})` : themeTokens.primary;
+    // Delegate to shared util for consistency
+    return conicGradientUtil(keys, dataMap, total, (i) => pieColor(i));
   }
 
   const navigate = useNavigate();
@@ -963,42 +956,14 @@ function DashboardPage() {
                 </div>
 
                 {pieMode ? (
-                  <div role="img" aria-label="Pie chart of behavior duration percentages"
-                       style={{ display: 'grid', gap: 8 }}>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                      {BEHAVIOR_CATEGORIES.map((b, idx) => {
-                        const mins = mockDurations[b] || 0;
-                        const pct = totalDuration ? Math.round((mins / totalDuration) * 100) : 0;
-                        const color = pieColor(idx);
-                        return (
-                          <button key={b}
-                                  onClick={() => navigate(`/timeline?behavior=${encodeURIComponent(b)}`)}
-                                  title={`${b}: ${formatHhMm(mins)} (${pct}%) • Click to view in Timeline`}
-                                  aria-label={`Filter timeline by ${b}`}
-                                  style={{ display: 'inline-flex', alignItems: 'center', gap: 6, border: `1px solid ${themeTokens.border}`, padding: '6px 8px', borderRadius: 10, background: 'var(--surface)', cursor: 'pointer' }}>
-                            <span aria-hidden style={{ width: 10, height: 10, borderRadius: 999, background: color, boxShadow: themeTokens.shadow }} />
-                            <span style={{ fontSize: 12, color: themeTokens.text }}>{b}</span>
-                          </button>
-                        );
-                      })}
-                    </div>
-
-                    <div
-                      onClick={onPieClick}
-                      style={{
-                        width: 240,
-                        height: 240,
-                        borderRadius: '50%',
-                        border: `1px solid ${themeTokens.border}`,
-                        boxShadow: themeTokens.shadow,
-                        background: conicGradientFromData(BEHAVIOR_CATEGORIES, mockDurations, totalDuration),
-                        margin: '8px auto',
-                        cursor: 'pointer'
-                      }}
-                      title="Pie chart (click to open Timeline with filter)"
-                      aria-label="Open Timeline filtered by Moving"
-                    />
-                  </div>
+                  <PieWithTooltip
+                    categories={BEHAVIOR_CATEGORIES}
+                    dataMap={mockDurations}
+                    total={totalDuration}
+                    colorResolver={pieColor}
+                    onSliceClick={(label) => navigate(`/timeline?behavior=${encodeURIComponent(label)}`)}
+                    formatLabel={(label, pct) => `${label} — ${pct}%`}
+                  />
                 ) : (
                   <div role="img" aria-label="Stacked bar chart of behavior duration in hours"
                        style={{ display: 'grid', gap: 8 }}>
@@ -1070,6 +1035,124 @@ function ChartBlock({ title, children }) {
     <div className="card" style={{ borderRadius: 16, padding: 16 }}>
       <div style={{ fontWeight: 800, marginBottom: 8 }}>{title}</div>
       <div>{children}</div>
+    </div>
+  );
+}
+
+/**
+ * PUBLIC_INTERFACE
+ * PieWithTooltip renders a conic-gradient pie with a hover tooltip that shows "<label> — <percentage>%".
+ * - It detects the hovered slice using cursor angle relative to the circle center.
+ * - Uses Neon Fun styling via Tooltip component.
+ */
+function PieWithTooltip({ categories, dataMap, total, colorResolver, onSliceClick, formatLabel }) {
+  const wrapperRef = useRef(null);
+  const [hover, setHover] = useState({ show: false, x: 0, y: 0, label: '', pct: '' });
+
+  // Precompute cumulative ranges for angle mapping [0..1)
+  const ranges = React.useMemo(() => {
+    const sum = total || categories.reduce((s, k) => s + (dataMap[k] || 0), 0);
+    let acc = 0;
+    const arr = categories.map((k, idx) => {
+      const v = Number(dataMap[k] || 0);
+      const frac = sum ? v / sum : 0;
+      const start = acc;
+      const end = acc + frac;
+      acc = end;
+      return { key: k, start, end, color: colorResolver(idx), value: v, frac };
+    });
+    return { slices: arr, sum };
+  }, [categories, dataMap, total, colorResolver]);
+
+  const onMove = (e) => {
+    if (!wrapperRef.current) return;
+    const rect = wrapperRef.current.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    const x = e.clientX - cx;
+    const y = e.clientY - cy;
+    const r = Math.sqrt(x * x + y * y);
+    const radius = rect.width / 2;
+
+    const within = r <= radius + 8 && r >= 0; // allow slight tolerance
+    if (!within || !ranges.sum) {
+      setHover(h => ({ ...h, show: false }));
+      return;
+    }
+
+    // Compute angle [0..1). Math.atan2 gives radians from -PI..PI (x-axis), we rotate so 0 is at top.
+    let angle = Math.atan2(y, x); // radians
+    // Convert to [0..2PI)
+    if (angle < 0) angle += Math.PI * 2;
+    // Rotate so 0 at top (negative y axis), clockwise
+    let norm = (angle - Math.PI / 2);
+    if (norm < 0) norm += Math.PI * 2;
+    const fracAngle = norm / (Math.PI * 2); // 0..1
+
+    const hit = ranges.slices.find(s => fracAngle >= s.start && fracAngle < s.end) || ranges.slices[ranges.slices.length - 1];
+    if (!hit) {
+      setHover(h => ({ ...h, show: false }));
+      return;
+    }
+
+    const pct = computePercentage(hit.value, ranges.sum, 1);
+    setHover({
+      show: true,
+      x: e.clientX,
+      y: e.clientY,
+      label: hit.key,
+      pct
+    });
+  };
+
+  const onLeave = () => setHover(h => ({ ...h, show: false }));
+
+  return (
+    <div role="img" aria-label="Pie chart of behavior duration percentages" style={{ display: 'grid', gap: 8 }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+        {categories.map((b, idx) => {
+          const mins = dataMap[b] || 0;
+          const pctStr = computePercentage(mins, total, 1);
+          const color = colorResolver(idx);
+          return (
+            <button key={b}
+              onClick={() => onSliceClick?.(b)}
+              title={`${b}: ${pctStr}% • Click to view in Timeline`}
+              aria-label={`Filter timeline by ${b}`}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 6, border: `1px solid var(--border)`, padding: '6px 8px', borderRadius: 10, background: 'var(--surface)', cursor: 'pointer' }}>
+              <span aria-hidden style={{ width: 10, height: 10, borderRadius: 999, background: color, boxShadow: 'var(--shadow)' }} />
+              <span style={{ fontSize: 12 }}>{b}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      <div
+        ref={wrapperRef}
+        onMouseMove={onMove}
+        onMouseLeave={onLeave}
+        onClick={() => onSliceClick?.(hover.label || categories[0])}
+        style={{
+          width: 240,
+          height: 240,
+          borderRadius: '50%',
+          border: `1px solid ${themeTokens.border}`,
+          boxShadow: themeTokens.shadow,
+          background: conicGradientUtil(categories, dataMap, total, (i) => colorResolver(i)),
+          margin: '8px auto',
+          cursor: 'pointer'
+        }}
+        title="Pie chart (hover to see details, click to open Timeline with filter)"
+        aria-describedby="chart-tooltip"
+        aria-label="Pie chart: hover to see behavior and percentage"
+      />
+      <Tooltip
+        visible={hover.show}
+        x={hover.x}
+        y={hover.y}
+        label={hover.label}
+        detail={`${hover.pct}%`}
+      />
     </div>
   );
 }
