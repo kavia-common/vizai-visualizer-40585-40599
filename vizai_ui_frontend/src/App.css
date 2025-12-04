@@ -101,17 +101,17 @@
   box-shadow: var(--shadow);
 }
 
-/* Ensure the brand logo image remains visible and sized */
+/* Ensure the brand logo image remains visible and follows responsive brand size */
 .nav img[alt="VizAI Logo"] {
-  width: var(--brand-icon-size, 32px) !important;
-  height: var(--brand-icon-size, 32px) !important;
+  width: var(--brand-icon-size, 48px) !important;
+  height: var(--brand-icon-size, 48px) !important;
   display: inline-block !important;
   object-fit: contain !important;
   opacity: 1 !important;
   visibility: visible !important;
   filter: none !important;
-  max-width: none !important;
-  max-height: none !important;
+  max-width: 100% !important;
+  max-height: 56px !important;
 }
 
 .dropdown {

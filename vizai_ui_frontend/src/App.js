@@ -63,13 +63,13 @@ function Logo() {
    * - Accessibility: alt and title for tooltip
    * - CSS safeguards ensure visibility and sizing
    */
-  const size = 'var(--brand-icon-size, 32px)';
+  const size = 'var(--brand-icon-size, 48px)';
   return (
     <img
       src="/assets/vizai-logo.png"
       alt="VizAI Logo"
-      width={32}
-      height={32}
+      width={48}
+      height={48}
       title="Return to Dashboard"
       aria-hidden={false}
       style={{
@@ -80,8 +80,8 @@ function Logo() {
         filter: 'none',
         opacity: 1,
         visibility: 'visible',
-        maxWidth: 'none',
-        maxHeight: 'none',
+        maxWidth: '100%',
+        maxHeight: '56px',
       }}
     />
   );
