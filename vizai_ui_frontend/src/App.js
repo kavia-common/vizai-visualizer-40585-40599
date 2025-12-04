@@ -8,6 +8,7 @@ import { computePercentage, conicGradient as conicGradientUtil } from './utils/c
 import Tooltip from './components/Tooltip';
 import { FiltersProvider, useFilters } from './context/FiltersContext';
 import LeftFilterSidebar from './components/LeftFilterSidebar';
+import AnimalProfileCard from './components/AnimalProfileCard';
 
 /**
  * PUBLIC_INTERFACE
@@ -520,6 +521,20 @@ function LoginPage() {
  * PUBLIC_INTERFACE
  * Animal selection remains unchanged.
  */
+function useMockSelectedAnimal() {
+  // In a future phase, this would read from backend or global context.
+  const now = new Date();
+  return {
+    photo: '/assets/animals/anteater-01.jpg',
+    name: 'Zara',
+    age: '5y',
+    sex: 'F',
+    enclosure: 'Savannah - E12',
+    status: 'Active',
+    lastUpdated: now,
+  };
+}
+
 function AnimalSelectPage() {
   const [query, setQuery] = useState('');
   const [showSuggest, setShowSuggest] = useState(false);
@@ -561,6 +576,16 @@ function AnimalSelectPage() {
             >
               Recently Monitored
             </button>
+          </div>
+        </div>
+
+        {/* Current/Recent monitored animal highlight */}
+        <div className="card" style={{ padding: 12, borderRadius: 14 }}>
+          <div style={{ display: 'grid', gap: 8 }}>
+            <div className="muted" style={{ fontSize: 12 }}>
+              Currently Monitored
+            </div>
+            <AnimalProfileCard {...useMockSelectedAnimal()} compact />
           </div>
         </div>
 
@@ -757,17 +782,35 @@ function DashboardPage() {
         <LeftFilterSidebar />
         <div style={{ display: 'grid', gap: 16 }}>
           {/* Page header aligned to Select Animal tone */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginBottom: 4 }}>
-            <div style={{ fontWeight: 900, fontSize: 20, flex: '0 0 auto' }}>Overview — Behavior Insights</div>
-            <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, alignItems: 'center' }}>
-              <button
-                style={primaryGhostBtnStyle}
-                title="Helpful tips"
-                aria-label="Show dashboard tips"
-              >
-                Tips
-              </button>
+          <div style={{ display: 'grid', gap: 8, marginBottom: 4 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+              <div style={{ fontWeight: 900, fontSize: 20, flex: '0 0 auto' }}>Overview — Behavior Insights</div>
+              <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, alignItems: 'center' }}>
+                <button
+                  style={primaryGhostBtnStyle}
+                  title="Helpful tips"
+                  aria-label="Show dashboard tips"
+                >
+                  Tips
+                </button>
+              </div>
             </div>
+            {/* Selected animal status */}
+            <AnimalProfileCard
+              {...(function(){
+                const now = new Date();
+                return {
+                  photo: '/assets/animals/anteater-01.jpg',
+                  name: 'Zara',
+                  age: '5y',
+                  sex: 'F',
+                  enclosure: 'Savannah - E12',
+                  status: 'Active',
+                  lastUpdated: now,
+                }
+              })()}
+              compact
+            />
           </div>
 
           {/* Helper microcopy bar mirroring Select Animal helper tone */}
