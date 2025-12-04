@@ -48,17 +48,45 @@ export function FiltersProvider({ children, initial = {} }) {
   const [hoursRange, setHoursRange] = useState(initial.hoursRange ?? { min: null, max: null });
   const [selectedDate, setSelectedDate] = useState(initial.selectedDate ?? null);
   const [applyVersion, setApplyVersion] = useState(0);
+  const [period, setPeriod] = useState(initial.period ?? 'weekly'); // daily|weekly|monthly|custom
+
+  function computePresetRange(p) {
+    const now = new Date();
+    const end = new Date(now);
+    end.setHours(23, 59, 59, 999);
+    const start = new Date(now);
+    if (p === 'daily') {
+      start.setHours(0, 0, 0, 0);
+    } else if (p === 'weekly') {
+      start.setDate(start.getDate() - 6);
+      start.setHours(0, 0, 0, 0);
+    } else if (p === 'monthly') {
+      start.setDate(start.getDate() - 29);
+      start.setHours(0, 0, 0, 0);
+    } else {
+      return { start: dateRange.start, end: dateRange.end };
+    }
+    return { start, end };
+  }
 
   const clear = () => {
     setBehaviorType('All');
     setDateRange({ start: null, end: null });
     setHoursRange({ min: null, max: null });
     setSelectedDate(null);
-    setApplyVersion(v => v + 1); // also notify listeners to recompute with cleared state
+    setPeriod('weekly');
+    setApplyVersion(v => v + 1);
   };
 
   const apply = () => {
-    // trigger recompute on listeners
+    setApplyVersion(v => v + 1);
+  };
+
+  const setPeriodAndRange = (p) => {
+    setPeriod(p);
+    if (p !== 'custom') {
+      setDateRange(computePresetRange(p));
+    }
     setApplyVersion(v => v + 1);
   };
 
@@ -67,9 +95,10 @@ export function FiltersProvider({ children, initial = {} }) {
     dateRange, setDateRange,
     hoursRange, setHoursRange,
     selectedDate, setSelectedDate,
+    period, setPeriod: setPeriodAndRange,
     apply, clear,
     applyVersion,
-  }), [behaviorType, dateRange, hoursRange, selectedDate, applyVersion]);
+  }), [behaviorType, dateRange, hoursRange, selectedDate, period, applyVersion]);
 
   return (
     <FiltersContext.Provider value={value}>

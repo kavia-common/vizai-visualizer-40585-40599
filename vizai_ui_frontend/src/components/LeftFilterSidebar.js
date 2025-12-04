@@ -72,6 +72,7 @@ export default function LeftFilterSidebar({
     dateRange, setDateRange,
     hoursRange, setHoursRange,
     selectedDate, setSelectedDate,
+    period, setPeriod,
     apply, clear,
   } = useFilters();
 
@@ -82,6 +83,7 @@ export default function LeftFilterSidebar({
   const [localMinH, setLocalMinH] = useState(hoursRange?.min ?? '');
   const [localMaxH, setLocalMaxH] = useState(hoursRange?.max ?? '');
   const [localSelectedDate, setLocalSelectedDate] = useState(selectedDate ? toInputDate(selectedDate) : '');
+  const [localPeriod, setLocalPeriod] = useState(period || 'weekly');
 
   // keep local in sync when external changes occur (e.g., pre-filters)
   useEffect(() => {
@@ -98,13 +100,21 @@ export default function LeftFilterSidebar({
   useEffect(() => {
     setLocalSelectedDate(selectedDate ? toInputDate(selectedDate) : '');
   }, [selectedDate]);
+  useEffect(() => {
+    setLocalPeriod(period || 'weekly');
+  }, [period]);
 
   const onApply = () => {
     setBehaviorType(localBehavior);
-    setDateRange({
-      start: localStart ? new Date(localStart) : null,
-      end: localEnd ? new Date(localEnd) : null,
-    });
+    // period handling: if not custom, period setter updates dateRange
+    setPeriod(localPeriod);
+    // if custom, respect local start/end values
+    if (localPeriod === 'custom') {
+      setDateRange({
+        start: localStart ? new Date(localStart) : null,
+        end: localEnd ? new Date(localEnd) : null,
+      });
+    }
     setHoursRange({
       min: localMinH === '' ? null : Number(localMinH),
       max: localMaxH === '' ? null : Number(localMaxH),
@@ -166,6 +176,24 @@ export default function LeftFilterSidebar({
               </select>
             )}
           </div>
+          <div style={{ fontSize: 12, color: 'var(--muted)' }}>
+            For Daily/Weekly/Monthly, the date range is set automatically. Choose Custom to pick specific dates.
+          </div>
+
+          <div>
+            <label style={labelStyle}>Time Period</label>
+            <select
+              aria-label="Time Period"
+              value={localPeriod}
+              onChange={(e) => setLocalPeriod(e.target.value)}
+              style={inputBase}
+            >
+              <option value="daily">Daily (today)</option>
+              <option value="weekly">Weekly (last 7 days)</option>
+              <option value="monthly">Monthly (last 30 days)</option>
+              <option value="custom">Custom Date Range</option>
+            </select>
+          </div>
 
           <div>
             <label style={labelStyle}>Date Range</label>
@@ -176,6 +204,7 @@ export default function LeftFilterSidebar({
                 value={localStart}
                 onChange={(e) => setLocalStart(e.target.value)}
                 style={inputBase}
+                disabled={localPeriod !== 'custom'}
               />
               <input
                 type="date"
@@ -183,6 +212,7 @@ export default function LeftFilterSidebar({
                 value={localEnd}
                 onChange={(e) => setLocalEnd(e.target.value)}
                 style={inputBase}
+                disabled={localPeriod !== 'custom'}
               />
             </div>
           </div>

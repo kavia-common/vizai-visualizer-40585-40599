@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState, createContext, useContext, useRef } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, Link, useLocation, useNavigate, useSearchParams, Outlet } from 'react-router-dom';
 import './index.css';
 import './App.css';
 import { loadUser, saveUser, clearUser } from './authStorage';
@@ -618,7 +618,6 @@ function AnimalSelectPage() {
   );
 
   return (
-    <AuthedLayout>
       <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: 16 }}>
         <LeftFilterSidebar />
         <div style={{ display: 'grid', gap: 16 }}>
@@ -676,8 +675,6 @@ function AnimalSelectPage() {
             Suggest Species
           </button>
         </div>
-      </div>
-      </div>
       {showSuggest && (
         <div role="dialog" aria-modal="true" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'grid', placeItems: 'center', zIndex: 60 }}>
           <div className="card" style={{ width: 420, padding: 16 }}>
@@ -698,7 +695,6 @@ function AnimalSelectPage() {
           </div>
         </div>
       )}
-    </AuthedLayout>
   );
 }
 
@@ -831,7 +827,7 @@ function DashboardPage() {
   };
 
   return (
-    <AuthedLayout>
+    <>
       <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: 16 }}>
         <LeftFilterSidebar />
         <div style={{ display: 'grid', gap: 16 }}>
@@ -868,9 +864,13 @@ function DashboardPage() {
                       <span>{b}</span>
                       <span>{mockCounts[b] ?? 0}</span>
                     </div>
-                    <div style={{
-                      height: 10, background: 'var(--table-row-hover)', border: `1px solid ${themeTokens.border}`, borderRadius: 999, overflow: 'hidden'
-                    }}>
+                    <div
+                      role="button"
+                      onClick={() => navigate(`/timeline?behavior=${encodeURIComponent(b)}`)}
+                      title={`Open Timeline filtered by ${b}`}
+                      style={{
+                        height: 10, background: 'var(--table-row-hover)', border: `1px solid ${themeTokens.border}`, borderRadius: 999, overflow: 'hidden', cursor: 'pointer'
+                      }}>
                       <div style={{
                         width: `${((mockCounts[b] ?? 0) / Math.max(1, totalCount)) * 100}%`,
                         background: themeTokens.gradient, height: '100%'
@@ -996,10 +996,8 @@ function DashboardPage() {
             You can continue exploring while previews are open.
           </span>
         </div>
-      </div>
-      </div>
       <VideoModal open={openVideo} onClose={() => setOpenVideo(false)} />
-    </AuthedLayout>
+    </>
   );
 }
 
@@ -1151,7 +1149,7 @@ function TimelinePage() {
   }, [searchParams, setBehaviorType]);
 
   return (
-    <AuthedLayout>
+    <>
       <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: 16 }}>
         <LeftFilterSidebar />
         <TimelineContent
@@ -1167,7 +1165,7 @@ function TimelinePage() {
           applyVersion={applyVersion}
         />
       </div>
-    </AuthedLayout>
+    </>
   );
 }
 
@@ -1444,6 +1442,25 @@ function BehaviorEventsList({ events, onOpenVideo }) {
   const BG = 'rgba(55,65,81,0.04)';
   const PRIMARY = '#10B981';
 
+  function formatTS(d) {
+    const dt = d instanceof Date ? d : new Date(d);
+    const y = dt.getFullYear();
+    const m = String(dt.getMonth() + 1).padStart(2, '0');
+    const day = String(dt.getDate()).padStart(2, '0');
+    const hh = String(dt.getHours()).padStart(2, '0');
+    const mm = String(dt.getMinutes()).padStart(2, '0');
+    const ss = String(dt.getSeconds()).padStart(2, '0');
+    return `${y}-${m}-${day} ${hh}:${mm}:${ss}`;
+  }
+  function formatDur(ms) {
+    const s = Math.max(0, Math.floor(ms / 1000));
+    const h = Math.floor(s / 3600);
+    const m = Math.floor((s % 3600) / 60);
+    const ss = s % 60;
+    if (h > 0) return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(ss).padStart(2,'0')}`;
+    return `${String(m).padStart(2,'0')}:${String(ss).padStart(2,'0')}`;
+  }
+
   if (!events || events.length === 0) {
     return (
       <div className="card" style={{ borderRadius: 16, padding: 16 }}>
@@ -1464,31 +1481,73 @@ function BehaviorEventsList({ events, onOpenVideo }) {
         background: BG
       }}>
         {events.map((e, i) => {
-          const timeStr = e.ts instanceof Date ? e.ts.toLocaleString() : String(e.ts);
+          const ts = e.ts instanceof Date ? e.ts : new Date(e.ts);
+          const timeStr = formatTS(ts);
           const metricsEntries = Object.entries(e.metrics || {});
+          // mock duration: 60-300s
+          const durMs = (e.durationMs != null) ? e.durationMs : (60 + ((i * 37) % 240)) * 1000;
+          const camera = e.camera || `Camera ${1 + (i % 3)}`;
+          const icon = e.label?.[0] || 'B';
+
           return (
             <div key={e.id || i} style={{
               display: 'grid',
-              gridTemplateColumns: '1fr auto',
-              gap: 8,
+              gridTemplateColumns: 'auto 1fr auto',
+              gap: 10,
+              alignItems: 'center',
               padding: '10px 12px',
               borderBottom: i === events.length - 1 ? 'none' : `1px solid ${themeTokens.border}`,
               background: 'var(--surface)'
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                <span className="badge" style={{ background: 'rgba(16,185,129,0.12)', color: PRIMARY }}>
-                  {e.label}
-                </span>
-                <span className="badge" style={{ background: 'rgba(55,65,81,0.10)', color: TEXT }}>
-                  {timeStr}
-                </span>
-                {metricsEntries.map(([k, v]) => (
-                  <span key={k} className="badge" style={{ background: 'rgba(245,158,11,0.12)', color: '#F59E0B' }}>
-                    {k}: {String(v)}
-                  </span>
-                ))}
+              {/* Icon */}
+              <div title={e.label} aria-hidden style={{
+                width: 36, height: 36, borderRadius: 10,
+                background: 'rgba(16,185,129,0.12)', color: PRIMARY,
+                display: 'grid', placeItems: 'center', fontWeight: 800, border: `1px solid ${themeTokens.border}`
+              }}>
+                {icon}
               </div>
-              <div style={{ display: 'flex', gap: 8 }}>
+              {/* Main */}
+              <div style={{ display: 'grid', gap: 6 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                  <span className="badge" style={{ background: 'rgba(16,185,129,0.12)', color: PRIMARY }}>
+                    {e.label}
+                  </span>
+                  <span className="badge" style={{ background: 'rgba(55,65,81,0.10)', color: TEXT }}>
+                    {timeStr}
+                  </span>
+                  <span className="badge" style={{ background: 'rgba(245,158,11,0.12)', color: '#F59E0B' }} title="Duration">
+                    {formatDur(durMs)}
+                  </span>
+                  <span className="badge" style={{ background: 'rgba(59,130,246,0.12)', color: '#2563EB' }} title="Camera Source">
+                    {camera}
+                  </span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                  {/* mock video thumbnail */}
+                  <div aria-hidden title="Video thumbnail (mock)" style={{
+                    width: 120, height: 60, borderRadius: 8, background: 'linear-gradient(135deg, rgba(30,138,91,0.12), rgba(245,158,11,0.12))',
+                    border: `1px solid ${themeTokens.border}`, display: 'grid', placeItems: 'center', color: 'var(--muted)', fontSize: 12
+                  }}>
+                    Thumbnail
+                  </div>
+                  {/* metadata chips */}
+                  {metricsEntries.length === 0 ? (
+                    <span className="badge" style={{ background: 'rgba(55,65,81,0.10)', color: TEXT }}>
+                      Confidence: —
+                    </span>
+                  ) : metricsEntries.map(([k, v]) => (
+                    <span key={k} className="badge" style={{ background: 'rgba(55,65,81,0.10)', color: TEXT }}>
+                      {k}: {String(v)}
+                    </span>
+                  ))}
+                  <span className="badge" style={{ background: 'rgba(107,114,128,0.12)', color: '#6B7280' }}>
+                    Environment: —
+                  </span>
+                </div>
+              </div>
+              {/* Actions */}
+              <div style={{ display: 'grid', gap: 8 }}>
                 <button style={primaryGhostBtnStyle} onClick={onOpenVideo} title="Preview video">View Video</button>
                 <button style={primaryGhostBtnStyle} title="Open details">Open</button>
               </div>
@@ -1525,7 +1584,7 @@ function ReportsPage() {
   };
 
   return (
-    <AuthedLayout>
+    <>
       <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: 16 }}>
         <LeftFilterSidebar />
         <div className="card" style={{ borderRadius: 16, padding: 16 }}>
@@ -1597,7 +1656,7 @@ function ReportsPage() {
           </div>
         </div>
       )}
-    </AuthedLayout>
+    </>
   );
 }
 
@@ -1608,38 +1667,37 @@ function ReportsPage() {
  * includes ConnectionBanner and NavBar
  * Adds left panel layout option and stores species/date in auth context for app-wide usage.
  */
-function AuthedLayout({ children }) {
+import { Outlet } from 'react-router-dom';
+function AuthedLayout() {
   /**
-   * Note: FiltersProvider is applied at route level in App() to guarantee that
-   * all authenticated pages (Dashboard, Timeline, Reports, Select Animal) are wrapped.
-   * Do not wrap another FiltersProvider here to avoid multiple nested contexts.
+   * FiltersProvider is applied once at the routes level; do not re-wrap here.
    */
   const { connLost, setConnLost } = useAuth();
 
   return (
-      <div style={{ minHeight: '100vh', background: themeTokens.background, color: themeTokens.text }}>
-        <ConnectionBanner
-          visible={true}
-          message={connLost ? 'Connection Status: Offline – Check your network' : 'Connection Status: Online'}
-        />
-        <NavBar />
-        <div style={{ padding: 16, maxWidth: 1200, margin: '0 auto' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-            <span title="Project status" style={{ fontSize: 12, color: 'var(--muted)' }}>
-              Environment: {process.env.REACT_APP_NODE_ENV || 'development'} • API: {process.env.REACT_APP_API_BASE || 'mock'}
-            </span>
-          </div>
-          {children}
-          <div style={{ marginTop: 16 }}>
-            <button style={primaryGhostBtnStyle} onClick={() => setConnLost(v => !v)}>
-              Toggle Connection Status
-            </button>
-            <span style={{ marginLeft: 8, color: 'var(--muted)', fontSize: 12 }}>
-              Tip: Behavior terms remain consistent across Dashboard, Timeline, and Reports for easy analysis.
-            </span>
-          </div>
+    <div style={{ minHeight: '100vh', background: themeTokens.background, color: themeTokens.text }}>
+      <ConnectionBanner
+        visible={true}
+        message={connLost ? 'Connection Status: Offline – Check your network' : 'Connection Status: Online'}
+      />
+      <NavBar />
+      <div style={{ padding: 16, maxWidth: 1200, margin: '0 auto' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+          <span title="Project status" style={{ fontSize: 12, color: 'var(--muted)' }}>
+            Environment: {process.env.REACT_APP_NODE_ENV || 'development'} • API: {process.env.REACT_APP_API_BASE || 'mock'}
+          </span>
+        </div>
+        <Outlet />
+        <div style={{ marginTop: 16 }}>
+          <button style={primaryGhostBtnStyle} onClick={() => setConnLost(v => !v)}>
+            Toggle Connection Status
+          </button>
+          <span style={{ marginLeft: 8, color: 'var(--muted)', fontSize: 12 }}>
+            Tip: Behavior terms remain consistent across Dashboard, Timeline, and Reports for easy analysis.
+          </span>
         </div>
       </div>
+    </div>
   );
 }
 
@@ -1693,34 +1751,28 @@ function App() {
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegistrationPage />} />
-          <Route path="/select-animal" element={
-            <ProtectedRoute>
-              <FiltersProvider>
-                <AnimalSelectPage />
-              </FiltersProvider>
-            </ProtectedRoute>
-          } />
-          <Route path="/dashboard" element={
-            <ProtectedRoute>
-              <FiltersProvider>
-                <DashboardPage />
-              </FiltersProvider>
-            </ProtectedRoute>
-          } />
-          <Route path="/timeline" element={
-            <ProtectedRoute>
-              <FiltersProvider>
-                <TimelinePage />
-              </FiltersProvider>
-            </ProtectedRoute>
-          } />
-          <Route path="/reports" element={
-            <ProtectedRoute requiredRoles={['Researcher','Field Observer','Admin']}>
-              <FiltersProvider>
-                <ReportsPage />
-              </FiltersProvider>
-            </ProtectedRoute>
-          } />
+          <Route
+            element={
+              <ProtectedRoute>
+                <FiltersProvider>
+                  <AuthedLayout />
+                </FiltersProvider>
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<Navigate to="dashboard" replace />} />
+            <Route path="select-animal" element={<AnimalSelectPage />} />
+            <Route path="dashboard" element={<DashboardPage />} />
+            <Route path="timeline" element={<TimelinePage />} />
+            <Route
+              path="reports"
+              element={
+                <ProtectedRoute requiredRoles={['Researcher','Field Observer','Admin']}>
+                  <ReportsPage />
+                </ProtectedRoute>
+              }
+            />
+          </Route>
           <Route path="/" element={<Navigate to="/login" replace />} />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
