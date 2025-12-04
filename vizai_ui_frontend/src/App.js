@@ -214,6 +214,7 @@ function VideoModal({ open, onClose }) {
   const [showAI, setShowAI] = useState(true);
   const [error, setError] = useState('');
   const playerRef = useRef(null);
+  const { species } = useAuth();
 
   useEffect(() => {
     if (!open) {
@@ -287,7 +288,7 @@ function VideoModal({ open, onClose }) {
           <div>
             <div style={{ fontWeight: 800, marginBottom: 8 }}>Metadata</div>
             <ul style={{ margin: 0, paddingLeft: 16, color: '#D1D5DB', lineHeight: 1.8 }}>
-              <li>Species: Giant Anteater</li>
+              {species ? <li>Species: {species}</li> : null}
               <li>Behavior: Moving</li>
               <li>Confidence: 0.92</li>
               <li>Timestamp: 2025-01-22 14:37:09</li>
@@ -536,7 +537,10 @@ function AnimalSelectPage() {
     { key: 'sloth', name: 'Sloth', subtitle: 'Coming Soon', active: false, expected: 'Expected: Sep 2025', img: '/assets/species/sloth.png' },
   ];
 
-  const filtered = speciesList.filter(s => s.name.toLowerCase().includes(query.toLowerCase()));
+  // Filter out Giant Anteater entirely from UI
+  const filtered = speciesList
+    .filter(s => s.name !== 'Giant Anteater')
+    .filter(s => s.name.toLowerCase().includes(query.toLowerCase()));
 
   const EmptySpecies = (
     <EmptyState
@@ -787,24 +791,9 @@ function DashboardPage() {
                 {tabBtn('explorer', 'Behavior Explorer')}
               </div>
             </div>
-            {/* Selected animal summary (kept compact to avoid any header/strip appearance) */}
-            <div style={{ display: 'grid', gap: 6 }}>
-              <AnimalProfileCard
-                {...(function(){
-                  const now = new Date();
-                  return {
-                    photo: '',
-                    name: 'Giant Anteater',
-                    age: '5y',
-                    sex: 'F',
-                    enclosure: 'Savannah - E12',
-                    status: 'Active',
-                    lastUpdated: now,
-                  }
-                })()}
-                compact
-              />
-            </div>
+            {/* Selected animal summary removed per requirement to hide 'Giant Anteater' row.
+                Keep spacing tidy with a small placeholder gap. */}
+            <div style={{ height: 0 }} aria-hidden />
           </div>
 
 
@@ -1677,7 +1666,7 @@ function App() {
   const [authed, setAuthed] = useState(false);
   const [user, setUser] = useState(null); // { email, role }
   const [dateRange, setDateRange] = useState('Last 7 Days');
-  const [species, setSpecies] = useState('Giant Anteater');
+  const [species, setSpecies] = useState(''); // no default species
 
   useEffect(() => {
     // Attempt to restore prior session
