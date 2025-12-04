@@ -571,11 +571,7 @@ function AnimalSelectPage() {
 
         
 
-        <div className="card" style={{ padding: 12, borderRadius: 14, display: 'flex', gap: 8, alignItems: 'center' }}>
-          <div style={{ color: 'var(--muted)', fontSize: 12 }}>
-            Tip: Behavior terms remain consistent across Dashboard, Timeline, and Reports for easy analysis.
-          </div>
-        </div>
+
 
         {filtered.length === 0 ? (
           <div style={{ display: 'grid', gap: 12 }}>
@@ -837,12 +833,7 @@ function DashboardPage() {
             />
           </div>
 
-          {/* Helper microcopy bar mirroring Select Animal helper tone */}
-          <div className="card" style={{ padding: 12, borderRadius: 14, display: 'flex', gap: 8, alignItems: 'center' }}>
-            <div style={{ color: 'var(--muted)', fontSize: 12 }}>
-              Tip: Click any legend item to jump to Timeline with that behavior pre-filtered.
-            </div>
-          </div>
+
 
           {activeTab === 'overview' ? (
             <>
@@ -1251,12 +1242,7 @@ function TimelineContent({ view, setView, zoom, setZoom, count, setCount, openVi
           </div>
         </div>
 
-        {/* Helper microcopy bar mirroring Select Animal tip card */}
-        <div className="card" style={{ padding: 12, borderRadius: 14, display: 'flex', gap: 8, alignItems: 'center' }}>
-          <div style={{ color: 'var(--muted)', fontSize: 12 }}>
-            Tip: Hover the timeline to see behavior durations. Open any event to preview video.
-          </div>
-        </div>
+
 
         {/* Behavior Timeline visualization */}
         <BehaviorTimeline
@@ -1686,11 +1672,7 @@ function AuthedLayout() {
           </span>
         </div>
         <Outlet />
-        <div style={{ marginTop: 16 }}>
-          <span style={{ color: 'var(--muted)', fontSize: 12 }}>
-            Tip: Behavior terms remain consistent across Dashboard, Timeline, and Reports for easy analysis.
-          </span>
-        </div>
+
       </div>
       {/* Floating chatbot widget available on all authenticated pages */}
       <ChatbotWidget />
