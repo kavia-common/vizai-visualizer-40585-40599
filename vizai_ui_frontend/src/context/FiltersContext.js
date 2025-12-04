@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useMemo, useState, useCallback } from 'react';
+import React, { createContext, useContext, useMemo, useState, useCallback, useEffect } from 'react';
 
 // PUBLIC_INTERFACE
 export const FiltersContext = createContext(null);
@@ -34,21 +34,76 @@ export function useFiltersSafe() {
  *  - dateRange: { start: string|Date|null, end: string|Date|null }
  *  - hoursRange: { min: number|null, max: number|null }
  *  - selectedDate: string|Date|null
+ *  - period: 'daily'|'weekly'|'monthly'|'custom'
  * Actions:
  *  - setBehaviorType(v)
  *  - setDateRange({start,end})
  *  - setHoursRange({min,max})
  *  - setSelectedDate(d)
+ *  - setPeriod(p) : also updates dateRange for presets
  *  - apply() : increments an applyVersion to signal downstream refresh
  *  - clear() : reset to defaults
+ *
+ * Persistence:
+ *  - Persists to localStorage and hydrates on mount.
  */
+const STORAGE_KEY = 'vizai_filters_v1';
+
+function reviveDate(v) {
+  if (!v) return null;
+  const d = new Date(v);
+  return isNaN(d.getTime()) ? null : d;
+}
+
+function safeRead() {
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object') return null;
+    // Coerce date fields back to Date
+    if (parsed.dateRange) {
+      parsed.dateRange = {
+        start: reviveDate(parsed.dateRange.start),
+        end: reviveDate(parsed.dateRange.end),
+      };
+    }
+    if (parsed.selectedDate) parsed.selectedDate = reviveDate(parsed.selectedDate);
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function safeWrite(val) {
+  try {
+    const serializable = {
+      ...val,
+      dateRange: val.dateRange
+        ? {
+            start: val.dateRange.start ? new Date(val.dateRange.start).toISOString() : null,
+            end: val.dateRange.end ? new Date(val.dateRange.end).toISOString() : null,
+          }
+        : { start: null, end: null },
+      selectedDate: val.selectedDate ? new Date(val.selectedDate).toISOString() : null,
+    };
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(serializable));
+  } catch {
+    // ignore storage failures
+  }
+}
+
+// PUBLIC_INTERFACE
 export function FiltersProvider({ children, initial = {} }) {
-  const [behaviorType, setBehaviorType] = useState(initial.behaviorType ?? 'All');
-  const [dateRange, setDateRange] = useState(initial.dateRange ?? { start: null, end: null });
-  const [hoursRange, setHoursRange] = useState(initial.hoursRange ?? { min: null, max: null });
-  const [selectedDate, setSelectedDate] = useState(initial.selectedDate ?? null);
+  // Hydrate initial state from localStorage once
+  const persisted = typeof window !== 'undefined' ? safeRead() : null;
+
+  const [behaviorType, setBehaviorType] = useState(persisted?.behaviorType ?? initial.behaviorType ?? 'All');
+  const [dateRange, setDateRange] = useState(persisted?.dateRange ?? initial.dateRange ?? { start: null, end: null });
+  const [hoursRange, setHoursRange] = useState(persisted?.hoursRange ?? initial.hoursRange ?? { min: null, max: null });
+  const [selectedDate, setSelectedDate] = useState(persisted?.selectedDate ?? initial.selectedDate ?? null);
+  const [period, _setPeriod] = useState(persisted?.period ?? initial.period ?? 'weekly'); // daily|weekly|monthly|custom
   const [applyVersion, setApplyVersion] = useState(0);
-  const [period, setPeriod] = useState(initial.period ?? 'weekly'); // daily|weekly|monthly|custom
 
   function computePresetRange(p) {
     const now = new Date();
@@ -74,7 +129,7 @@ export function FiltersProvider({ children, initial = {} }) {
     setDateRange({ start: null, end: null });
     setHoursRange({ min: null, max: null });
     setSelectedDate(null);
-    setPeriod('weekly');
+    _setPeriod('weekly');
     setApplyVersion(v => v + 1);
   };
 
@@ -83,12 +138,19 @@ export function FiltersProvider({ children, initial = {} }) {
   };
 
   const setPeriodAndRange = useCallback((p) => {
-    setPeriod(p);
+    _setPeriod(p);
     if (p !== 'custom') {
       setDateRange(computePresetRange(p));
     }
     setApplyVersion(v => v + 1);
-  }, [setPeriod, setDateRange]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [/* computePresetRange uses dateRange, but it's recomputed at call time */]);
+
+  // Persist on changes
+  useEffect(() => {
+    const snapshot = { behaviorType, dateRange, hoursRange, selectedDate, period };
+    safeWrite(snapshot);
+  }, [behaviorType, dateRange, hoursRange, selectedDate, period]);
 
   const value = useMemo(() => ({
     behaviorType, setBehaviorType,
