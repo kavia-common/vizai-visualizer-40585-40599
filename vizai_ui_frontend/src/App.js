@@ -9,6 +9,7 @@ import Tooltip from './components/Tooltip';
 import { FiltersProvider, useFilters } from './context/FiltersContext';
 import LeftFilterSidebar from './components/LeftFilterSidebar';
 import AnimalProfileCard from './components/AnimalProfileCard';
+import ChatbotWidget from './components/ChatbotWidget';
 
 /**
  * PUBLIC_INTERFACE
@@ -1683,6 +1684,8 @@ function AuthedLayout() {
           </span>
         </div>
       </div>
+      {/* Floating chatbot widget available on all authenticated pages */}
+      <ChatbotWidget />
     </div>
   );
 }
