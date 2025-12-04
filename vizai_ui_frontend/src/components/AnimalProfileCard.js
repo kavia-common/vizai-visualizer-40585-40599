@@ -69,38 +69,11 @@ export default function AnimalProfileCard({
         gap: 10,
       }}
     >
-      {/* Photo */}
-      <div
-        style={{
-          width: '100%',
-          height: compact ? 120 : 160,
-          borderRadius: 12,
-          overflow: 'hidden',
-          border: `1px solid ${COLORS.border}`,
-          background:
-            'linear-gradient(135deg, rgba(16,185,129,0.10), rgba(245,158,11,0.10))',
-          display: 'grid',
-          placeItems: 'center',
-        }}
-        aria-hidden={!photo}
-      >
-        {photo ? (
-          <img
-            src={photo}
-            alt={`${name} photo`}
-            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-          />
-        ) : (
-          <span style={{ color: COLORS.muted, fontSize: 12 }}>No Photo</span>
-        )}
-      </div>
-
-      {/* Title row */}
+      {/* Title row only (photo header block removed globally) */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         <div style={{ fontWeight: 900, color: COLORS.text, fontSize: compact ? 14 : 16 }}>
           {name}
         </div>
-        {/* Status badge removed per request to hide the chip element globally */}
       </div>
 
       {/* Inline details directly under the photo */}

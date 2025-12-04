@@ -1511,18 +1511,12 @@ function BehaviorEventsList({ events, onOpenVideo }) {
               {/* Main */}
               <div style={{ display: 'grid', gap: 6 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                  <span className="badge" style={{ background: 'rgba(16,185,129,0.12)', color: PRIMARY }}>
-                    {e.label}
-                  </span>
-                  <span className="badge" style={{ background: 'rgba(55,65,81,0.10)', color: TEXT }}>
-                    {timeStr}
-                  </span>
-                  <span className="badge" style={{ background: 'rgba(245,158,11,0.12)', color: '#F59E0B' }} title="Duration">
-                    {formatDur(durMs)}
-                  </span>
-                  <span className="badge" style={{ background: 'rgba(59,130,246,0.12)', color: '#2563EB' }} title="Camera Source">
-                    {camera}
-                  </span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <strong style={{ color: PRIMARY }}>{e.label}</strong>
+                    <span style={{ color: TEXT }}>{timeStr}</span>
+                    <span style={{ color: '#F59E0B' }} title="Duration">{formatDur(durMs)}</span>
+                    <span style={{ color: '#2563EB' }} title="Camera Source">{camera}</span>
+                  </div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                   {/* mock video thumbnail */}
@@ -1542,7 +1536,7 @@ function BehaviorEventsList({ events, onOpenVideo }) {
                       {k}: {String(v)}
                     </span>
                   ))}
-                  <span className="badge" style={{ background: 'rgba(107,114,128,0.12)', color: '#6B7280' }}>
+                  <span style={{ color: '#6B7280' }}>
                     Environment: —
                   </span>
                 </div>

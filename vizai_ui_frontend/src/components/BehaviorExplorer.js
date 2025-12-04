@@ -138,12 +138,11 @@ export default function BehaviorExplorer({
   );
 }
 
-function SummaryCard({ title, value, badge }) {
+function SummaryCard({ title, value }) {
   return (
     <div className="card" style={{ padding: 12, borderRadius: 14 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
         <div style={{ fontSize: 12, color: 'var(--muted)', fontWeight: 700 }}>{title}</div>
-        <span className="badge" aria-label={`${badge}`}>{badge}</span>
       </div>
       <div style={{ fontWeight: 900, fontSize: 20, color: COLORS.text, marginTop: 4 }}>{value}</div>
     </div>
@@ -210,13 +209,13 @@ function DistributionChips({ title, buckets }) {
   return (
     <div className="card" style={{ padding: 12, borderRadius: 14 }}>
       <div style={{ fontWeight: 800, marginBottom: 8 }}>{title}</div>
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-        {buckets.map((b, i) => (
-          <span key={b.label} className="badge" title={`${b.label}: ${b.value} (${b.pct}%)`} style={{ background: 'rgba(16,185,129,0.12)', color: COLORS.text }}>
-            <span aria-hidden style={{ width: 10, height: 10, borderRadius: 999, background: COLORS.primary }} />
-            <span>{b.label}</span>
-            <span style={{ color: COLORS.muted }}>• {b.pct}%</span>
-          </span>
+      <div style={{ display: 'grid', gap: 6 }}>
+        {buckets.map((b) => (
+          <div key={b.label} title={`${b.label}: ${b.value} (${b.pct}%)`} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span aria-hidden style={{ width: 8, height: 8, borderRadius: 999, background: COLORS.primary }} />
+            <span style={{ fontWeight: 700 }}>{b.label}</span>
+            <span style={{ color: COLORS.muted }}>({b.pct}%)</span>
+          </div>
         ))}
       </div>
     </div>
