@@ -636,9 +636,9 @@ function AnimalSelectPage() {
 
   // Mock species list with expected availability
   const speciesList = [
-    { key: 'anteater', name: 'Giant Anteater', subtitle: 'Myrmecophaga tridactyla', active: true, expected: null, img: '/assets/giant-anteater.png' },
-    { key: 'pangolin', name: 'Pangolin', subtitle: 'Coming Soon', active: false, expected: 'Expected: Feb 2026', img: '/assets/pangolin.png' },
-    { key: 'sloth', name: 'Sloth', subtitle: 'Coming Soon', active: false, expected: 'Expected: Sep 2025', img: '/assets/sloth.png' },
+    { key: 'anteater', name: 'Giant Anteater', subtitle: 'Myrmecophaga tridactyla', active: true, expected: null, img: '/assets/species/anteater.png' },
+    { key: 'pangolin', name: 'Pangolin', subtitle: 'Coming Soon', active: false, expected: 'Expected: Feb 2026', img: '/assets/species/pangolin.png' },
+    { key: 'sloth', name: 'Sloth', subtitle: 'Coming Soon', active: false, expected: 'Expected: Sep 2025', img: '/assets/species/sloth.png' },
   ];
 
   const filtered = speciesList.filter(s => s.name.toLowerCase().includes(query.toLowerCase()));
