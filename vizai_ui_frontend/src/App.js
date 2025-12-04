@@ -231,6 +231,7 @@ function NavBar() {
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+        {/* Display only the user's email; role must remain hidden in UI post-login */}
         <div style={{
           display: 'inline-flex', alignItems: 'center', gap: 8, padding: '8px 10px',
           border: `1px solid ${themeTokens.border}`, borderRadius: 12, background: 'var(--surface)', boxShadow: themeTokens.shadow
@@ -1374,7 +1375,7 @@ function AuthedLayout({ children }) {
 function ProtectedRoute({ children, requiredRoles }) {
   const { authed, user } = useAuth();
   if (!authed) return <Navigate to="/login" replace />;
-  // If specific roles are required, check internally; role is not shown in UI
+  // Role is used ONLY for internal authorization checks; never render role in UI post-login
   if (requiredRoles && requiredRoles.length > 0) {
     const ok = user?.role && requiredRoles.includes(user.role);
     if (!ok) {
