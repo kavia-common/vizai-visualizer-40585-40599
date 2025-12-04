@@ -815,23 +815,24 @@ function DashboardPage() {
                 {tabBtn('explorer', 'Behavior Explorer')}
               </div>
             </div>
-            {/* Selected animal status */}
-            <AnimalProfileCard
-              {...(function(){
-                const now = new Date();
-                // Replace individual name with species-level label to avoid showing 'Zara'
-                return {
-                  photo: '/assets/animals/anteater-01.jpg',
-                  name: 'Giant Anteater',
-                  age: '5y',
-                  sex: 'F',
-                  enclosure: 'Savannah - E12',
-                  status: 'Active',
-                  lastUpdated: now,
-                }
-              })()}
-              compact
-            />
+            {/* Selected animal summary (kept compact to avoid any header/strip appearance) */}
+            <div style={{ display: 'grid', gap: 6 }}>
+              <AnimalProfileCard
+                {...(function(){
+                  const now = new Date();
+                  return {
+                    photo: '',
+                    name: 'Giant Anteater',
+                    age: '5y',
+                    sex: 'F',
+                    enclosure: 'Savannah - E12',
+                    status: 'Active',
+                    lastUpdated: now,
+                  }
+                })()}
+                compact
+              />
+            </div>
           </div>
 
 

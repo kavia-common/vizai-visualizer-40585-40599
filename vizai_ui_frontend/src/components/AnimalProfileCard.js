@@ -69,8 +69,8 @@ export default function AnimalProfileCard({
         gap: 10,
       }}
     >
-      {/* Title row only (no chips/labels) */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+      {/* Title row only (no chips/labels); ensure minimal top margin to avoid strip-like look */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 0 }}>
         <div style={{ fontWeight: 900, color: COLORS.text, fontSize: compact ? 14 : 16 }}>
           {name}
         </div>
