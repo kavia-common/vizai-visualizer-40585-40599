@@ -11,6 +11,7 @@ import LeftFilterSidebar from './components/LeftFilterSidebar';
 import AnimalProfileCard from './components/AnimalProfileCard';
 import ChatbotWidget from './components/ChatbotWidget';
 import BehaviorExplorer from './components/BehaviorExplorer';
+import DailyActivityDetails from './components/DailyActivityDetails';
 
 /**
  * PUBLIC_INTERFACE
@@ -144,6 +145,9 @@ function NavBar() {
           </Link>
           <Link to="/timeline" style={tabStyle(isActive('/timeline'))} title="Behavior Explorer">
             Timeline
+          </Link>
+          <Link to="/activity/day" style={tabStyle(isActive('/activity/day'))} title="Daily Activity Details">
+            Daily
           </Link>
           <Link to="/reports" style={tabStyle(isActive('/reports'))} title="Generate reports">
             Reports
@@ -1725,6 +1729,7 @@ function App() {
             <Route path="select-animal" element={<AnimalSelectPage />} />
             <Route path="dashboard" element={<DashboardPage />} />
             <Route path="timeline" element={<TimelinePage />} />
+            <Route path="activity/day" element={<DailyActivityDetails />} />
             <Route
               path="reports"
               element={
