@@ -40,6 +40,8 @@ const featureFlags = (() => {
     return {};
   }
 })();
+// touch featureFlags to avoid unused warning; can drive gates later
+const __featureFlagsInUse = !!featureFlags;
 
 /**
  * PUBLIC_INTERFACE
@@ -724,7 +726,7 @@ function SpeciesCard({ data }) {
       display: 'grid',
       placeItems: 'center'
     }}>
-      <img src={img} alt={`${name} image`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+      <img src={img} alt={name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
     </div>
   ) : imgFallback;
 
@@ -819,10 +821,7 @@ function DashboardPage() {
   ];
   function pieColor(i) { return piePalette[i % piePalette.length]; }
   function barColor(i) { return barPalette[i % barPalette.length]; }
-  function conicGradientFromData(keys, dataMap, total) {
-    // Delegate to shared util for consistency
-    return conicGradientUtil(keys, dataMap, total, (i) => pieColor(i));
-  }
+  // conicGradientUtil is used directly in PieWithTooltip for chart backgrounds
 
   const onPieClick = (label = 'Moving') => {
     setBehaviorType(label);
@@ -1189,7 +1188,7 @@ function TimelineContent({ view, setView, zoom, setZoom, count, setCount, openVi
       { label: 'Pacing', start: new Date(start.getTime() + 118 * 60 * 1000), end: new Date(start.getTime() + 120 * 60 * 1000), metrics: { loops: 3 } },
     ];
     return { range: { start, end }, items: behaviors };
-  }, [applyVersion]);
+  }, []);
 
   const filteredSegments = React.useMemo(() => {
     if (behaviorFilter === 'All') return mockSegments;
@@ -1289,31 +1288,7 @@ const selectStyle = {
   boxShadow: themeTokens.shadow,
 };
 
-function BehaviorEventCard({ onOpenVideo }) {
-  return (
-    <div className="card" style={{
-      borderRadius: 16,
-      overflow: 'hidden'
-    }}>
-      <div style={{ height: 120, background: 'var(--table-row-hover)', display: 'grid', placeItems: 'center', color: 'var(--muted)' }}>
-        [ Thumbnail ]
-      </div>
-      <div style={{ padding: 12, display: 'grid', gap: 6 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <StatusBadge status="Active" />
-          <span style={{ color: 'var(--muted)', fontSize: 12 }} aria-label="Event time">14:37:09</span>
-        </div>
-        <div className="muted" style={{ fontSize: 14 }}>
-          Behavior: Moving • Confidence: 0.92
-        </div>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <button style={primaryGhostBtnStyle} onClick={onOpenVideo} title="Preview video">View Video</button>
-          <button style={primaryGhostBtnStyle} title="Open details">Open</button>
-        </div>
-      </div>
-    </div>
-  );
-}
+
 
 /**
  * PUBLIC_INTERFACE
@@ -1351,7 +1326,7 @@ function BehaviorTimeline({ range, items, zoom = 100, species, dateRange, behavi
   const hourCount = Math.ceil(totalMs / (60 * 60 * 1000));
 
   const onEnter = (e, seg) => {
-    const rect = containerRef.current?.getBoundingClientRect();
+    // const rect = containerRef.current?.getBoundingClientRect();
     setHover({
       x: e.clientX,
       y: e.clientY,
