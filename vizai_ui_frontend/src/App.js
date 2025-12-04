@@ -519,14 +519,14 @@ function LoginPage() {
 
 /**
  * PUBLIC_INTERFACE
- * Animal selection remains unchanged.
+ * Animal selection remains unchanged. (Reserved for future backend integration)
  */
 function useMockSelectedAnimal() {
-  // In a future phase, this would read from backend or global context.
+  // Placeholder for potential future data source.
   const now = new Date();
   return {
-    photo: '/assets/animals/anteater-01.jpg',
-    name: 'Zara',
+    photo: '',
+    name: '',
     age: '5y',
     sex: 'F',
     enclosure: 'Savannah - E12',
@@ -677,19 +677,34 @@ function SpeciesCard({ data }) {
         <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 8 }}>{expected}</div>
       ) : null}
 
-      {/* Inline details preview using AnimalProfileCard for active species */}
+      {/* Inline details for active species under the species subtitle (no individual photo/name) */}
       {active ? (
-        <div style={{ marginTop: 8 }}>
-          <AnimalProfileCard
-            photo="/assets/animals/anteater-01.jpg"
-            name="Zara"
-            age="5y"
-            sex="F"
-            enclosure="Savannah - E12"
-            status="Active"
-            lastUpdated={new Date()}
-            compact
-          />
+        <div
+          className="muted"
+          style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: 10,
+            fontSize: 12,
+            marginTop: 6,
+          }}
+          aria-label="Species details"
+        >
+          <span title="Age" aria-label="Age 5y">
+            Age: <b style={{ color: 'var(--text)' }}>5y</b>
+          </span>
+          <span title="Sex" aria-label="Sex F">
+            Sex: <b style={{ color: 'var(--text)' }}>F</b>
+          </span>
+          <span title="Enclosure" aria-label="Enclosure Savannah - E12">
+            Enclosure: <b style={{ color: 'var(--text)' }}>Savannah - E12</b>
+          </span>
+          <span title="Last updated" aria-label="Last updated just now">
+            Last updated:{' '}
+            <time dateTime={new Date().toISOString()}>
+              {new Date().toLocaleString([], { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}
+            </time>
+          </span>
         </div>
       ) : null}
 
