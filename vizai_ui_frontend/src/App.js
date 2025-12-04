@@ -618,10 +618,10 @@ function AnimalSelectPage() {
   );
 
   return (
-      <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: 16 }}>
-        <LeftFilterSidebar />
-        <div style={{ display: 'grid', gap: 16 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+    <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: 16 }}>
+      <LeftFilterSidebar />
+      <div style={{ display: 'grid', gap: 16 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
           <div style={{ fontWeight: 900, fontSize: 20, flex: '0 0 auto' }}>Select an Animal to Monitor</div>
           <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, alignItems: 'center' }}>
             <input
@@ -675,6 +675,7 @@ function AnimalSelectPage() {
             Suggest Species
           </button>
         </div>
+      </div>
       {showSuggest && (
         <div role="dialog" aria-modal="true" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'grid', placeItems: 'center', zIndex: 60 }}>
           <div className="card" style={{ width: 420, padding: 16 }}>
@@ -695,6 +696,7 @@ function AnimalSelectPage() {
           </div>
         </div>
       )}
+    </div>
   );
 }
 
@@ -845,146 +847,147 @@ function DashboardPage() {
             </div>
           </div>
 
-        {/* Helper microcopy bar mirroring Select Animal helper tone */}
-        <div className="card" style={{ padding: 12, borderRadius: 14, display: 'flex', gap: 8, alignItems: 'center' }}>
-          <div style={{ color: 'var(--muted)', fontSize: 12 }}>
-            Tip: Click any legend item to jump to Timeline with that behavior pre-filtered.
+          {/* Helper microcopy bar mirroring Select Animal helper tone */}
+          <div className="card" style={{ padding: 12, borderRadius: 14, display: 'flex', gap: 8, alignItems: 'center' }}>
+            <div style={{ color: 'var(--muted)', fontSize: 12 }}>
+              Tip: Click any legend item to jump to Timeline with that behavior pre-filtered.
+            </div>
           </div>
-        </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(280px,1fr))', gap: 16 }}>
-          <ChartBlock title="Behavior Count">
-            {totalCount === 0 ? (
-              <EmptyState title="No behaviors found" description="Try expanding your date range." />
-            ) : (
-              <div style={{ display: 'grid', gap: 8 }}>
-                {BEHAVIOR_CATEGORIES.map(b => (
-                  <div key={b} style={{ display: 'grid', gap: 6 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--muted)' }}>
-                      <span>{b}</span>
-                      <span>{mockCounts[b] ?? 0}</span>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(280px,1fr))', gap: 16 }}>
+            <ChartBlock title="Behavior Count">
+              {totalCount === 0 ? (
+                <EmptyState title="No behaviors found" description="Try expanding your date range." />
+              ) : (
+                <div style={{ display: 'grid', gap: 8 }}>
+                  {BEHAVIOR_CATEGORIES.map(b => (
+                    <div key={b} style={{ display: 'grid', gap: 6 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--muted)' }}>
+                        <span>{b}</span>
+                        <span>{mockCounts[b] ?? 0}</span>
+                      </div>
+                      <div
+                        role="button"
+                        onClick={() => navigate(`/timeline?behavior=${encodeURIComponent(b)}`)}
+                        title={`Open Timeline filtered by ${b}`}
+                        style={{
+                          height: 10, background: 'var(--table-row-hover)', border: `1px solid ${themeTokens.border}`, borderRadius: 999, overflow: 'hidden', cursor: 'pointer'
+                        }}>
+                        <div style={{
+                          width: `${((mockCounts[b] ?? 0) / Math.max(1, totalCount)) * 100}%`,
+                          background: themeTokens.gradient, height: '100%'
+                        }} />
+                      </div>
                     </div>
-                    <div
-                      role="button"
-                      onClick={() => navigate(`/timeline?behavior=${encodeURIComponent(b)}`)}
-                      title={`Open Timeline filtered by ${b}`}
-                      style={{
-                        height: 10, background: 'var(--table-row-hover)', border: `1px solid ${themeTokens.border}`, borderRadius: 999, overflow: 'hidden', cursor: 'pointer'
-                      }}>
-                      <div style={{
-                        width: `${((mockCounts[b] ?? 0) / Math.max(1, totalCount)) * 100}%`,
-                        background: themeTokens.gradient, height: '100%'
-                      }} />
-                    </div>
+                  ))}
+                </div>
+              )}
+            </ChartBlock>
+
+            <ChartBlock title="Behavior Duration">
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, gap: 8, alignItems: 'center' }}>
+                <div style={{ color: 'var(--muted)', fontSize: 12 }}>View</div>
+                <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+                  <button
+                    style={{ ...primaryGhostBtnStyle, background: durationMode === 'count' ? 'rgba(30,138,91,0.12)' : 'transparent' }}
+                    onClick={() => setDurationMode('count')}
+                    title="Show by count"
+                  >
+                    Count
+                  </button>
+                  <button
+                    style={{ ...primaryGhostBtnStyle, background: durationMode === 'duration' ? 'rgba(245,158,11,0.12)' : 'transparent' }}
+                    onClick={() => setDurationMode('duration')}
+                    title="Show by duration"
+                  >
+                    Duration
+                  </button>
+                  <button
+                    style={{ ...primaryGhostBtnStyle, background: pieMode ? 'rgba(59,130,246,0.12)' : 'transparent' }}
+                    onClick={() => setPieMode(true)}
+                    title="Pie chart view"
+                  >
+                    Pie
+                  </button>
+                  <button
+                    style={{ ...primaryGhostBtnStyle, background: !pieMode ? 'rgba(59,130,246,0.12)' : 'transparent' }}
+                    onClick={() => setPieMode(false)}
+                    title="Stacked bar view"
+                  >
+                    Stacked Bar
+                  </button>
+                </div>
+              </div>
+
+              {durationMode === 'count' ? (
+                <EmptyState title="Count mode" description="Showing distribution by event count (mocked)." />
+              ) : totalDuration === 0 ? (
+                <EmptyState title="No behavior duration data available for this period." description="" />
+              ) : (
+                <>
+                  <div style={{ fontWeight: 800, marginBottom: 6 }}>
+                    {pieMode ? 'Behavior Duration — Pie View' : 'Behavior Duration — Stacked Bar View'}
                   </div>
+
+                  {pieMode ? (
+                    <PieWithTooltip
+                      categories={BEHAVIOR_CATEGORIES}
+                      dataMap={mockDurations}
+                      total={totalDuration}
+                      colorResolver={pieColor}
+                      onSliceClick={(label) => onPieClick(label)}
+                      formatLabel={(label, pct) => `${label} — ${pct}%`}
+                    />
+                  ) : (
+                    <div role="img" aria-label="Stacked bar chart of behavior duration in hours"
+                         style={{ display: 'grid', gap: 8 }}>
+                      <div style={{
+                        height: 20,
+                        background: 'var(--table-row-hover)',
+                        border: `1px solid ${themeTokens.border}`,
+                        borderRadius: 999,
+                        overflow: 'hidden',
+                        display: 'flex'
+                      }}
+                        title="Cumulative time distribution across behaviors"
+                        aria-label="Cumulative time distribution across behaviors"
+                      >
+                        {BEHAVIOR_CATEGORIES.map((b, idx) => {
+                          const mins = mockDurations[b] || 0;
+                          const widthPct = totalDuration ? (mins / totalDuration) * 100 : 0;
+                          const color = barColor(idx);
+                          return (
+                            <div
+                              key={b}
+                              style={{ width: `${widthPct}%`, background: color }}
+                              title={`${b}: ${formatHhMm(mins)}`}
+                              aria-label={`${b}: ${formatHhMm(mins)}`}
+                              onClick={() => navigate(`/timeline?behavior=${encodeURIComponent(b)}`)}
+                            />
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+            </ChartBlock>
+
+            <ChartBlock title="Daily Activity Pattern">
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6,1fr)', gap: 6 }}>
+                {Array.from({ length: 18 }).map((_, i) => (
+                  <div key={i} title="mock heat"
+                    style={{
+                      height: 22,
+                      borderRadius: 6,
+                      background: `rgba(30,138,91,${0.10 + ((i % 6) * 0.12)})`,
+                      border: `1px solid ${themeTokens.border}`
+                    }}
+                  />
                 ))}
               </div>
-            )}
-          </ChartBlock>
-
-          <ChartBlock title="Behavior Duration">
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, gap: 8, alignItems: 'center' }}>
-              <div style={{ color: 'var(--muted)', fontSize: 12 }}>View</div>
-              <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
-                <button
-                  style={{ ...primaryGhostBtnStyle, background: durationMode === 'count' ? 'rgba(30,138,91,0.12)' : 'transparent' }}
-                  onClick={() => setDurationMode('count')}
-                  title="Show by count"
-                >
-                  Count
-                </button>
-                <button
-                  style={{ ...primaryGhostBtnStyle, background: durationMode === 'duration' ? 'rgba(245,158,11,0.12)' : 'transparent' }}
-                  onClick={() => setDurationMode('duration')}
-                  title="Show by duration"
-                >
-                  Duration
-                </button>
-                <button
-                  style={{ ...primaryGhostBtnStyle, background: pieMode ? 'rgba(59,130,246,0.12)' : 'transparent' }}
-                  onClick={() => setPieMode(true)}
-                  title="Pie chart view"
-                >
-                  Pie
-                </button>
-                <button
-                  style={{ ...primaryGhostBtnStyle, background: !pieMode ? 'rgba(59,130,246,0.12)' : 'transparent' }}
-                  onClick={() => setPieMode(false)}
-                  title="Stacked bar view"
-                >
-                  Stacked Bar
-                </button>
-              </div>
-            </div>
-
-            {durationMode === 'count' ? (
-              <EmptyState title="Count mode" description="Showing distribution by event count (mocked)." />
-            ) : totalDuration === 0 ? (
-              <EmptyState title="No behavior duration data available for this period." description="" />
-            ) : (
-              <>
-                <div style={{ fontWeight: 800, marginBottom: 6 }}>
-                  {pieMode ? 'Behavior Duration — Pie View' : 'Behavior Duration — Stacked Bar View'}
-                </div>
-
-                {pieMode ? (
-                  <PieWithTooltip
-                    categories={BEHAVIOR_CATEGORIES}
-                    dataMap={mockDurations}
-                    total={totalDuration}
-                    colorResolver={pieColor}
-                    onSliceClick={(label) => onPieClick(label)}
-                    formatLabel={(label, pct) => `${label} — ${pct}%`}
-                  />
-                ) : (
-                  <div role="img" aria-label="Stacked bar chart of behavior duration in hours"
-                       style={{ display: 'grid', gap: 8 }}>
-                    <div style={{
-                      height: 20,
-                      background: 'var(--table-row-hover)',
-                      border: `1px solid ${themeTokens.border}`,
-                      borderRadius: 999,
-                      overflow: 'hidden',
-                      display: 'flex'
-                    }}
-                      title="Cumulative time distribution across behaviors"
-                      aria-label="Cumulative time distribution across behaviors"
-                    >
-                      {BEHAVIOR_CATEGORIES.map((b, idx) => {
-                        const mins = mockDurations[b] || 0;
-                        const widthPct = totalDuration ? (mins / totalDuration) * 100 : 0;
-                        const color = barColor(idx);
-                        return (
-                          <div
-                            key={b}
-                            style={{ width: `${widthPct}%`, background: color }}
-                            title={`${b}: ${formatHhMm(mins)}`}
-                            aria-label={`${b}: ${formatHhMm(mins)}`}
-                            onClick={() => navigate(`/timeline?behavior=${encodeURIComponent(b)}`)}
-                          />
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-              </>
-            )}
-          </ChartBlock>
-
-          <ChartBlock title="Daily Activity Pattern">
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6,1fr)', gap: 6 }}>
-              {Array.from({ length: 18 }).map((_, i) => (
-                <div key={i} title="mock heat"
-                  style={{
-                    height: 22,
-                    borderRadius: 6,
-                    background: `rgba(30,138,91,${0.10 + ((i % 6) * 0.12)})`,
-                    border: `1px solid ${themeTokens.border}`
-                  }}
-                />
-              ))}
-            </div>
-          </ChartBlock>
+            </ChartBlock>
+          </div>
         </div>
 
         {/* Action area with consistent tone */}
@@ -996,6 +999,7 @@ function DashboardPage() {
             You can continue exploring while previews are open.
           </span>
         </div>
+      </div>
       <VideoModal open={openVideo} onClose={() => setOpenVideo(false)} />
     </>
   );
@@ -1667,7 +1671,7 @@ function ReportsPage() {
  * includes ConnectionBanner and NavBar
  * Adds left panel layout option and stores species/date in auth context for app-wide usage.
  */
-import { Outlet } from 'react-router-dom';
+
 function AuthedLayout() {
   /**
    * FiltersProvider is applied once at the routes level; do not re-wrap here.
