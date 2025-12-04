@@ -1514,11 +1514,11 @@ function BehaviorEventsList({ events, onOpenVideo }) {
                   </div>
                   {/* metadata chips */}
                   {metricsEntries.length === 0 ? (
-                    <span className="badge" style={{ background: 'rgba(55,65,81,0.10)', color: TEXT }}>
+                    <span style={{ color: TEXT }}>
                       Confidence: —
                     </span>
                   ) : metricsEntries.map(([k, v]) => (
-                    <span key={k} className="badge" style={{ background: 'rgba(55,65,81,0.10)', color: TEXT }}>
+                    <span key={k} style={{ color: TEXT }}>
                       {k}: {String(v)}
                     </span>
                   ))}

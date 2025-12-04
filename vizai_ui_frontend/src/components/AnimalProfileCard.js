@@ -58,8 +58,8 @@ export default function AnimalProfileCard({
           onClick();
         }
       }}
-      title={`${name} • ${status}`}
-      aria-label={`Animal card for ${name}, status ${status}, last updated ${updatedAt}`}
+      title={`${name}`}
+      aria-label={`Animal card for ${name}, last updated ${updatedAt}`}
       className="card"
       style={{
         borderRadius: 16,
@@ -69,7 +69,7 @@ export default function AnimalProfileCard({
         gap: 10,
       }}
     >
-      {/* Title row only (photo header block removed globally) */}
+      {/* Title row only (no chips/labels) */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         <div style={{ fontWeight: 900, color: COLORS.text, fontSize: compact ? 14 : 16 }}>
           {name}
