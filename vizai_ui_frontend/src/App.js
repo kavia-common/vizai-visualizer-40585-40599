@@ -6,7 +6,7 @@ import { loadUser, saveUser, clearUser } from './authStorage';
 // Shared chart helpers and tooltip
 import { computePercentage, conicGradient as conicGradientUtil } from './utils/chartUtils';
 import Tooltip from './components/Tooltip';
-import { FiltersProvider, useFilters } from './context/FiltersContext';
+import { FiltersProvider, useFilters, useFiltersSafe } from './context/FiltersContext';
 import LeftFilterSidebar from './components/LeftFilterSidebar';
 
 /**
@@ -767,12 +767,34 @@ function SpeciesCard({ data }) {
  * Dashboard with interactive pie/stacked legend to navigate to Timeline with filter
  */
 function DashboardPage() {
-  // Align style and copy with Select Animal: bold headers, helper microcopy, card treatments, button tone
-  const [openVideo, setOpenVideo] = useState(false);
-  const { setBehaviorType, setDateRange, apply } = useFilters();
+  // Always call hooks at top-level
+  const filtersCtx = useFiltersSafe();
+  const missingFilters = !filtersCtx;
+  const navigate = useNavigate();
 
+  // Local UI state hooks must be declared before any early return
+  const [openVideo, setOpenVideo] = useState(false);
   const [durationMode, setDurationMode] = useState('duration'); // count|duration
   const [pieMode, setPieMode] = useState(true); // stacked/pie toggle (mocked)
+
+  // Defensive fallback if no provider
+  if (missingFilters) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', padding: 24 }}>
+        <div className="card" style={{ padding: 16, borderRadius: 16, maxWidth: 560 }}>
+          <div style={{ fontWeight: 900, marginBottom: 8 }}>Filters not available</div>
+          <div className="muted" style={{ fontSize: 14 }}>
+            Please sign in and access the Dashboard from within the authenticated area.
+          </div>
+          <div style={{ marginTop: 12 }}>
+            <Link to="/login">Go to Login</Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const { setBehaviorType, apply } = filtersCtx;
 
   const mockCounts = {
     'Recumbent': 22,
@@ -822,7 +844,6 @@ function DashboardPage() {
     return conicGradientUtil(keys, dataMap, total, (i) => pieColor(i));
   }
 
-  const navigate = useNavigate();
   const onPieClick = (label = 'Moving') => {
     setBehaviorType(label);
     // Keep date range unchanged; just ensure apply triggers downstream recompute

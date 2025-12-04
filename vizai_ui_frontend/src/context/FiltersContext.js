@@ -3,17 +3,27 @@ import React, { createContext, useContext, useMemo, useState } from 'react';
 // PUBLIC_INTERFACE
 export const FiltersContext = createContext(null);
 
-// PUBLIC_INTERFACE
+/**
+ * PUBLIC_INTERFACE
+ * useFilters hook that throws if provider is missing. Prefer useFiltersSafe where a graceful fallback is needed.
+ */
 export function useFilters() {
-  /** Hook to read/write shared filters state across authed pages. */
   const ctx = useContext(FiltersContext);
   if (!ctx) {
-    // Provide a clear, actionable error to help developers wire the provider correctly
     throw new Error(
       'useFilters must be used within a <FiltersProvider>. Ensure authenticated routes (Dashboard, Timeline, Reports) are wrapped by <FiltersProvider> (e.g., in AuthedLayout).'
     );
   }
   return ctx;
+}
+
+/**
+ * PUBLIC_INTERFACE
+ * Safe variant that returns null instead of throwing when provider is missing.
+ * Useful for defensive UI fallbacks without violating hooks rules.
+ */
+export function useFiltersSafe() {
+  return useContext(FiltersContext);
 }
 
 /**
