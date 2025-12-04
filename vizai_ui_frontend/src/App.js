@@ -66,7 +66,7 @@ function Logo() {
   const size = 'var(--brand-icon-size, 32px)';
   return (
     <img
-      src={"/assets/vizai-logo-v5.png"}
+      src={"/assets/vizai-logo-v5.png?v=1"}
       alt="VizAI Logo"
       width={32}
       height={32}
