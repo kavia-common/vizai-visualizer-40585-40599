@@ -100,25 +100,7 @@ export default function AnimalProfileCard({
         <div style={{ fontWeight: 900, color: COLORS.text, fontSize: compact ? 14 : 16 }}>
           {name}
         </div>
-        <span
-          aria-label={`Current status ${status}`}
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 6,
-            padding: '4px 8px',
-            borderRadius: 999,
-            background: meta.bg,
-            color: meta.color,
-            fontWeight: 800,
-            fontSize: 12,
-            border: `1px solid ${COLORS.border}`,
-            boxShadow: COLORS.shadow,
-          }}
-        >
-          <span aria-hidden>{meta.icon}</span>
-          <span>{status}</span>
-        </span>
+        {/* Status badge removed per request to hide the chip element globally */}
       </div>
 
       {/* Inline details directly under the photo */}
